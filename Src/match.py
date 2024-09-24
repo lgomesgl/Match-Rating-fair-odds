@@ -67,6 +67,21 @@ if __name__ == '__main__':
     file = r'D:\LUCAS\Match Rating\Database\Premier League'
     
     datas = os.listdir(file)
+    dfs = []
+    for data in datas:
+        df = pd.read_csv(os.path.join(file, data))
+        dfs.append(df)
+    
+    # Concatenate all season dfs
+    df_final = pd.concat(dfs, axis=0)
+    # Shuffle the data
+    df_shuffled = df_final.sample(frac=1).reset_index(drop=True)
+    
+    # Split the data at train & test
+    train_size = int(0.8 * len(df_shuffled))
+    train_data = df_shuffled[:train_size]
+    test_data = df_shuffled[train_size:]
+
     matchs_rating = {}
     for data in datas:
         df = pd.read_csv(os.path.join(file, data))
@@ -92,6 +107,3 @@ if __name__ == '__main__':
     resultados = calcular_percentuais_ajustados(best_model_H, best_model_D, best_model_A, -40, 40)
     tabela = pd.DataFrame(resultados).T
     print(tabela)
-    # # Exibir os resultados
-    # for x, percentuais in resultados.items():
-    #     print(f"x = {x}: H = {percentuais['H']:.2f}%, D = {percentuais['D']:.2f}%, A = {percentuais['A']:.2f}%")
