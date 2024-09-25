@@ -46,9 +46,9 @@ def calcular_percentuais_ajustados(poly_h, poly_d, poly_a, x_min, x_max):
         A_pred = f(x, interc_a, coefs_a)
         
         # Ajustar as porcentagens
-        H_perc, D_perc, A_perc = ajustar_percentuais(H_pred, D_pred, A_pred)
+        # H_perc, D_perc, A_perc = ajustar_percentuais(H_pred, D_pred, A_pred)
         
         # Salvar no dicionário de resultados
-        resultados[x] = {'H': round(H_perc,2), 'D': round(D_perc,2), 'A': round(A_perc,2), 'OddsFairH': 100/round(H_perc,2), 'OddsFairD':100/round(D_perc,2),'OddsFairA':100/round(A_perc,2)}
+        resultados[x] = {'H': round(H_pred,2), 'D': round(D_pred,2), 'A': round(A_pred,2)}
     
     return resultados

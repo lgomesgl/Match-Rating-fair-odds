@@ -4,8 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import r2_score
 
-from polynomial_fit import plot_percentages_with_best_regression, plot_regression
-from odds_fair import calcular_percentuais_ajustados
+from tools import plot_and_table, normalize_data
+from combined_matchs import OneModel
 
 class MatchRating:
     def __init__(self, matchs_rating, estatistic, league='PL'):
@@ -54,56 +54,47 @@ class MatchRating:
              
             ftr = row['FTR']
             
-            if match_rating not in self.matchs_rating:
-                self.matchs_rating[match_rating] = {'H': 0, 'D':0, 'A':0}
-                self.matchs_rating[match_rating][ftr] += 1
+            if match_rating not in self.matchs_rating[self.estatistic]:
+                self.matchs_rating[self.estatistic][match_rating] = {'H': 0, 'D':0, 'A':0}
+                self.matchs_rating[self.estatistic][match_rating][ftr] += 1
             else: 
                 try:
-                    self.matchs_rating[match_rating][ftr] += 1
+                    self.matchs_rating[self.estatistic][match_rating][ftr] += 1
                 except:
                     pass                
                             
 if __name__ == '__main__':
-    file = r'D:\LUCAS\Match Rating\Database\Premier League'
-    
-    datas = os.listdir(file)
-    dfs = []
-    for data in datas:
-        df = pd.read_csv(os.path.join(file, data))
-        dfs.append(df)
-    
-    # Concatenate all season dfs
-    df_final = pd.concat(dfs, axis=0)
-    # Shuffle the data
-    df_shuffled = df_final.sample(frac=1).reset_index(drop=True)
-    
-    # Split the data at train & test
-    train_size = int(0.8 * len(df_shuffled))
-    train_data = df_shuffled[:train_size]
-    test_data = df_shuffled[train_size:]
+    # Train
+    file_train = r'D:\LUCAS\Match Rating\Database\Premier League\train'
+    datas_train = os.listdir(file_train)
 
-    matchs_rating = {}
-    for data in datas:
-        df = pd.read_csv(os.path.join(file, data))
-        test = MatchRating(matchs_rating=matchs_rating, estatistic='Target Shoots')
-        test.get_columns()
-        test.get_match_rating(data=df)
-    print(dict(sorted(matchs_rating.items())))
+    matchs_rating = {
+        'Gols':{},
+        'Target Shoots': {}
+    }
+    for data in datas_train:
+        df = pd.read_csv(os.path.join(file_train, data))
+        for stats in ['Gols','Target Shoots']:
+            test = MatchRating(matchs_rating=matchs_rating, estatistic=stats)
+            test.get_columns()
+            test.get_match_rating(data=df)
+            
+    results_gols = plot_and_table(data_dict=dict(sorted(matchs_rating['Gols'].items())), range=(-28,28), show_grap=False)
+    results_ts = plot_and_table(data_dict=dict(sorted(matchs_rating['Target Shoots'].items())), range=(-45,61), show_grap=False)
     
-    keys, H_perc, D_perc, A_perc = plot_percentages_with_best_regression(data_dict=dict(sorted(matchs_rating.items())))
+    all_results = {
+        'Gols': results_gols,
+        'Target Shoots': results_ts
+    }
     
-    plt.subplot(3, 1, 1)
-    best_model_H, best_degree_H, best_r2_H = plot_regression(keys=keys, data_perc=H_perc, color='b', label='H')
+    # Test
+    file_test = r'D:\LUCAS\Match Rating\Database\Premier League\test'
+    datas_test = os.listdir(file_test)
     
-    plt.subplot(3, 1, 2)
-    best_model_D, best_degree_D, best_r2_D = plot_regression(keys=keys, data_perc=D_perc, color='g', label='D')
-
-    plt.subplot(3, 1, 3)
-    best_model_A, best_degree_A, best_r2_A = plot_regression(keys=keys, data_perc=A_perc, color='r', label='A')
-
-    # plt.tight_layout()
-    # plt.show()
-    
-    resultados = calcular_percentuais_ajustados(best_model_H, best_model_D, best_model_A, -40, 40)
-    tabela = pd.DataFrame(resultados).T
-    print(tabela)
+    for data in datas_test:
+        df = pd.read_csv(os.path.join(file_test, data))
+        
+        onemodel = OneModel(data=df, models_ratings=all_results)
+        onemodel.get_probabilities_models()
+        
+        
