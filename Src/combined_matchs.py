@@ -5,7 +5,7 @@ class OneModel:
         self.data = data
         self.models_ratings = models_ratings
         
-    def get_columns(self, stats):
+    def __get_columns(self, stats):
         columns_map = {
             'Gols': ['FTHG', 'FTAG'],
             'Target Shoots': ['HST', 'AST']
@@ -13,12 +13,12 @@ class OneModel:
         
         self.columns = columns_map.get(stats)
        
-    def probability_match(self, w1, probability_gols, probability_ts):
+    def __probability_match(self, w1, prob_gols, prob_ts):
         w2 = 1-w1
-        prob_match = w1*probability_gols + w2*probability_ts
+        prob_match = w1*np.array(prob_gols) + w2*np.array(prob_ts)
         return prob_match
     
-    def prob_match_real(self, ftr):
+    def __prob_match_real(self, ftr):
         if ftr == 'H':
             return [1,0,0] 
         elif ftr == 'D':
@@ -26,24 +26,33 @@ class OneModel:
         elif ftr == 'A':
             return [0,0,1]
 
-    def erro_log_loss(self, prob_real, prob_match_model):
-        erro = -np.sum(prob_real * np.log(prob_match_model))
+    def __erro_log_loss(self, prob_real, prob_match, epsilon=1e-10):
+        prob_match = np.clip(prob_match, epsilon, 1-epsilon)
+        erro = -np.sum(prob_real * np.log(prob_match))
         return erro
     
-    def derivative_erro_log_loss(self, prob_real, prob_match_model, prob_gols, prob_chute):
-        dev_erro = np.sum((prob_match_model - prob_real) * (prob_gols - prob_chute))
+    def __derivative_erro_log_loss(self, prob_real, prob_match, prob_gols, prob_ts):    
+        dev_erro = np.sum((np.array(prob_match) - np.array(prob_real)) * (np.array(prob_gols) - np.array(prob_ts)))
         return dev_erro
                
-    def stochastic_gradient(self, w1, dev_erro, learning_rate=0.001):
+    def __stochastic_gradient(self, w1, dev_erro, learning_rate=0.0001):
         return w1 - learning_rate*dev_erro
                
-    def calculate_w1(self, prob_gols, prob_ts, ftr):
-        ...
+    def calculate_w1(self, w1, prob_gols, prob_ts, ftr):
+        prob_match = self.__probability_match(w1=w1, prob_gols=prob_gols, prob_ts=prob_ts)
+        prob_real = self.__prob_match_real(ftr=ftr)
+        
+        erro_log = self.__erro_log_loss(prob_real=prob_real, prob_match=prob_match)
+        dev_erro = self.__derivative_erro_log_loss(prob_real=prob_real, prob_match=prob_match, prob_gols=prob_gols, prob_ts=prob_ts)
+    
+        w1 = self.__stochastic_gradient(w1, dev_erro=dev_erro)
+        return max(0, min(1, w1)) # att the w1
              
-    def get_match_rating(self, data, stats, n_matchs_behind=5):
+    def get_match_rating(self, w1, n_matchs_behind=5):
+        data = self.data
         for i in range(n_matchs_behind*10+1, data.shape[0]):
             for stats in ['Gols', 'Target Shoots']:
-                self.get_columns(stats=stats)
+                self.__get_columns(stats=stats)
                 
                 data_behind = data.iloc[i-n_matchs_behind*10-1:i, :]
 
@@ -76,8 +85,10 @@ class OneModel:
                 self.ftr = row['FTR']
             
                 if stats == 'Gols':
-                    self.probabilities_gols_match = list(self.models_ratings[stats][match_rating].values())
+                    self.prob_gols = list(self.models_ratings[stats][match_rating].values())
                 elif stats ==  'Target Shoots':
-                    self.probabilities_ts_match = list(self.models_ratings[stats][match_rating].values())
+                    self.prob_ts = list(self.models_ratings[stats][match_rating].values())
             
-            
+            w1 = self.calculate_w1(w1=w1, prob_gols=self.prob_gols, prob_ts=self.prob_ts, ftr=self.ftr)    
+            # print(w1)
+        return w1

@@ -91,10 +91,11 @@ if __name__ == '__main__':
     file_test = r'D:\LUCAS\Match Rating\Database\Premier League\test'
     datas_test = os.listdir(file_test)
     
+    w1 = 0.5 # Chute inicial
     for data in datas_test:
         df = pd.read_csv(os.path.join(file_test, data))
         
         onemodel = OneModel(data=df, models_ratings=all_results)
-        onemodel.get_probabilities_models()
-        
+        w1 = onemodel.get_match_rating(w1=w1)
+    print(w1)
         
