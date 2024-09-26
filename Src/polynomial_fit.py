@@ -20,7 +20,7 @@ def best_polynomial_fit(X, y, max_degree=4, threshold=0.05):
         r2 = r2_score(y, y_pred)
 
         r2_values.append(r2)
-        print(f"Modelo grau {degree}: R^2 = {r2:.4f}")
+        # print(f"Modelo grau {degree}: R^2 = {r2:.4f}")
 
         # Verifica se o modelo melhora significativamente em relação ao anterior
         if r2 > best_r2 + threshold:
