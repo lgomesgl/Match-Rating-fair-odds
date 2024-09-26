@@ -38,17 +38,21 @@ class OneModel:
     def __stochastic_gradient(self, w1, dev_erro, learning_rate=0.0001):
         return w1 - learning_rate*dev_erro
                
-    def calculate_w1(self, w1, prob_gols, prob_ts, ftr):
+    def calculate_w1(self, w1, prob_gols, prob_ts, ftr, optimizer):
         prob_match = self.__probability_match(w1=w1, prob_gols=prob_gols, prob_ts=prob_ts)
         prob_real = self.__prob_match_real(ftr=ftr)
         
         erro_log = self.__erro_log_loss(prob_real=prob_real, prob_match=prob_match)
         dev_erro = self.__derivative_erro_log_loss(prob_real=prob_real, prob_match=prob_match, prob_gols=prob_gols, prob_ts=prob_ts)
-    
-        w1 = self.__stochastic_gradient(w1, dev_erro=dev_erro)
+
+        # w1 = self.__stochastic_gradient(w1, dev_erro=dev_erro)
+        
+        # Atualiza w1 usando o Adam optimizer
+        w1 = optimizer.update(w1, dev_erro)
+        
         return max(0, min(1, w1)) # att the w1
              
-    def get_match_rating(self, w1, n_matchs_behind=5):
+    def get_match_rating(self, w1, optimizer, n_matchs_behind=5):
         data = self.data
         for i in range(n_matchs_behind*10+1, data.shape[0]):
             for stats in ['Gols', 'Target Shoots']:
@@ -89,6 +93,6 @@ class OneModel:
                 elif stats ==  'Target Shoots':
                     self.prob_ts = list(self.models_ratings[stats][match_rating].values())
             
-            w1 = self.calculate_w1(w1=w1, prob_gols=self.prob_gols, prob_ts=self.prob_ts, ftr=self.ftr)    
+            w1 = self.calculate_w1(w1=w1, prob_gols=self.prob_gols, prob_ts=self.prob_ts, ftr=self.ftr, optimizer=optimizer)    
             # print(w1)
         return w1

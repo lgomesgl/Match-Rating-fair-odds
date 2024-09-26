@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+import json
 from scipy.stats import norm
 
 from polynomial_fit import plot_percentages_with_best_regression, plot_regression
@@ -82,3 +83,11 @@ def normalize_data(data):
         # data[key]['A_z'] = norm.cdf(ratings[2])
         
     return data
+
+def save_json_file(output_path, json_data):
+    # Primeiro, converte todos os valores que não são compatíveis com JSON
+    # json_data = convert_values_for_json(json_data)
+    
+    # Salva o arquivo JSON
+    with open(output_path, 'w') as json_file:
+        json.dump(json_data, json_file, indent=4)
