@@ -1,4 +1,5 @@
 import numpy as np
+from optimizer import OptimizerAdam
 
 class OneModel:
     def __init__(self, data, models_ratings):
@@ -35,9 +36,9 @@ class OneModel:
         dev_erro = np.sum((np.array(prob_match) - np.array(prob_real)) * (np.array(prob_gols) - np.array(prob_ts)))
         return dev_erro
                
-    def __stochastic_gradient(self, w1, dev_erro, learning_rate=0.0001):
+    def __stochastic_gradient(self, w1, dev_erro, learning_rate=0.00001):
         return w1 - learning_rate*dev_erro
-               
+                         
     def calculate_w1(self, w1, prob_gols, prob_ts, ftr, optimizer):
         prob_match = self.__probability_match(w1=w1, prob_gols=prob_gols, prob_ts=prob_ts)
         prob_real = self.__prob_match_real(ftr=ftr)
@@ -51,7 +52,7 @@ class OneModel:
         w1 = optimizer.update(w1, dev_erro)
         
         return max(0, min(1, w1)) # att the w1
-             
+                     
     def get_match_rating(self, w1, optimizer, n_matchs_behind=5):
         data = self.data
         for i in range(n_matchs_behind*10+1, data.shape[0]):

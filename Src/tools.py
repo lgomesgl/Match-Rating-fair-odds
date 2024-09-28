@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+import os
 import json
 from scipy.stats import norm
 
@@ -72,7 +73,7 @@ def normalize_data(data):
         ratings = [H_values[i], D_values[i], A_values[i]]
         # probabilities = softmax(ratings)
         # probabilities = direct_renormalize(ratings)
-        ratings = rank_normalization(ratings)
+        # ratings = rank_normalization(ratings)
         # Atualiza o dicionário original com as probabilidades ajustadas
         data[key]['H_zscore'] = ratings[0]
         data[key]['D_zscore'] = ratings[1]
@@ -83,6 +84,12 @@ def normalize_data(data):
         # data[key]['A_z'] = norm.cdf(ratings[2])
         
     return data
+
+def load_json_file(file_path):
+    if os.path.exists(file_path):
+        with open(file_path, 'r') as f:
+            return json.load(f)
+    return {}
 
 def save_json_file(output_path, json_data):
     # Primeiro, converte todos os valores que não são compatíveis com JSON
