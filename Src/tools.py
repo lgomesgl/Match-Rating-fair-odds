@@ -8,7 +8,7 @@ from scipy.stats import norm
 from polynomial_fit import plot_percentages_with_best_regression, plot_regression
 from odds_fair import calcular_percentuais_ajustados
 
-def plot_and_table(data_dict, range, show_grap=False):
+def plot_and_table(data_dict, range, league_name, stats, show_grap=False):
     keys, H_perc, D_perc, A_perc = plot_percentages_with_best_regression(data_dict=data_dict)
     
     plt.subplot(3, 1, 1)
@@ -20,10 +20,14 @@ def plot_and_table(data_dict, range, show_grap=False):
     plt.subplot(3, 1, 3)
     best_model_A, best_degree_A, best_r2_A = plot_regression(keys=keys, data_perc=A_perc, color='r', label='A')
 
+    plt.savefig(fr'D:\LUCAS\Match Rating\Database\{league_name}\Graphs\{stats}.png')
+
     if show_grap:
         plt.tight_layout()
         plt.show()
         
+    plt.close()
+    
     resultados = calcular_percentuais_ajustados(best_model_H, best_model_D, best_model_A, range[0], range[1])
     # resultados = normalize_data(resultados)
     

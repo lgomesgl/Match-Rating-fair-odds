@@ -94,5 +94,5 @@ class OneModel:
                     self.prob_ts = list(self.models_ratings[stats][match_rating].values())
 
             w1 = self.calculate_w1(w1=w1, prob_gols=self.prob_gols, prob_ts=self.prob_ts, ftr=self.ftr, optimizer=optimizer)
-            print(w1)
+            # print(w1)
         return w1
