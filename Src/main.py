@@ -1,16 +1,21 @@
 import os
 import pandas as pd
+import logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-from tools import plot_and_table, normalize_data, load_json_file, save_json_file
+from tools import normalize_data, load_json_file, save_json_file
 from match import MatchRating
 from regression_polynomial import RegressionPolynomial
 from combined_matchs import OneModel
 from optimizer import OptimizerAdam
 
 def main(league_name, match_rating_path):
+    logging.info(f'Start into { league_name }')
+    
     # Load existing results
     all_results = load_json_file(match_rating_path)
     
+    logging.info(f'Start into train data')
     # Train
     file_train = fr'D:\LUCAS\Match Rating\Database\{ league_name }\train'
     datas_train = os.listdir(file_train)
@@ -22,9 +27,11 @@ def main(league_name, match_rating_path):
     for data in datas_train:
         df = pd.read_csv(os.path.join(file_train, data))
         for stats in ['Gols','Target Shoots']:
-            test = MatchRating(matchs_rating=matchs_rating, estatistic=stats)
-            test.get_columns()
-            test.get_match_rating(data=df)
+            match_rat = MatchRating(matchs_rating=matchs_rating, estatistic=stats)
+            match_rat.get_columns()
+            match_rat.get_match_rating(data=df)
+            
+    
             
     rp_gols = RegressionPolynomial(league_name=league_name,
                                         stats='Gols',
@@ -50,6 +57,7 @@ def main(league_name, match_rating_path):
     })
     
     # Test
+    logging.info(f'Start into test data')
     file_test = fr'D:\LUCAS\Match Rating\Database\{ league_name }\test'
     datas_test = os.listdir(file_test)
     
