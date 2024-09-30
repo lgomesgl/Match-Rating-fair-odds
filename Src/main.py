@@ -28,8 +28,17 @@ def main(league_name, match_rating_path):
             test.get_columns()
             test.get_match_rating(data=df)
             
-    results_gols = plot_and_table(data_dict=dict(sorted(matchs_rating['Gols'].items())), range=(-28,28), show_grap=False)
-    results_ts = plot_and_table(data_dict=dict(sorted(matchs_rating['Target Shoots'].items())), range=(-45,61), show_grap=False)
+    results_gols = plot_and_table(data_dict=dict(sorted(matchs_rating['Gols'].items())), 
+                                  range=(-29,28), 
+                                  league_name=league_name, 
+                                  stats='Gols', 
+                                  show_grap=False)
+    
+    results_ts = plot_and_table(data_dict=dict(sorted(matchs_rating['Target Shoots'].items())), 
+                                range=(-57,61), 
+                                league_name=league_name, 
+                                stats='Target_shoots', 
+                                show_grap=False)
     
     # Initialize league results if not present
     if league_name not in all_results:
@@ -61,5 +70,7 @@ def main(league_name, match_rating_path):
     save_json_file(match_rating_path, all_results)
     
 if __name__ == '__main__':
-    for league in ['Premier League', 'La Liga']:
+    for league in ['Premier League', 'La Liga', 'Bundesliga', 'SerieA', 'Ligue1']:
         main(league_name=league, match_rating_path=r'D:\LUCAS\Football_2.0\Database\Static\matchs_ratings.json')
+        
+        
