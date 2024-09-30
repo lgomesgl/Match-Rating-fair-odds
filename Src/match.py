@@ -1,13 +1,11 @@
 class MatchRating:
-    def __init__(self, matchs_rating, estatistic, league='PL'):
+    def __init__(self, matchs_rating, estatistic):
         """
         Initializes the MatchRating class with the provided match ratings, statistic type, and league.
         
         :param matchs_rating: Dictionary to store match ratings.
         :param estatistic: The statistic to be used ('Gols', 'Shoots', 'Target Shoots').
-        :param league: The league identifier (default is 'PL').
         """
-        self.league = league
         self.estatistic = estatistic
         self.matchs_rating = matchs_rating
         
@@ -81,5 +79,3 @@ class MatchRating:
             # Update the corresponding outcome (H, D, A)
             if ftr in self.matchs_rating[self.estatistic][match_rating]:
                 self.matchs_rating[self.estatistic][match_rating][ftr] += 1
-
-        
