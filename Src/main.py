@@ -22,12 +22,13 @@ def main(league_name, match_rating_path):
 
     matchs_rating = {
         'Gols':{},
-        'Target Shoots': {}
+        'Shoots':{},
+        'Target Shoots':{}
     }
     for data in datas_train:
         df = pd.read_csv(os.path.join(file_train, data))
-        for stats in ['Gols','Target Shoots']:
-            match_rat = MatchRating(matchs_rating=matchs_rating, estatistic=stats)
+        for stats in ['Gols','Shoots','Target Shoots']:
+            match_rat = MatchRating(matchs_rating=matchs_rating, estatistic=stats, gols=1.5)
             match_rat.get_columns()
             match_rat.get_match_rating(data=df) 
     
@@ -35,7 +36,13 @@ def main(league_name, match_rating_path):
                                         stats='Gols',
                                         match_rating=dict(sorted(matchs_rating['Gols'].items())),
                                         range=(-29,28))
-    results_gols = rp_gols.fit(show_graphs=False)   
+    results_gols = rp_gols.fit(show_graphs=False) 
+    
+    rp_shoots = RegressionPolynomial(league_name=league_name,
+                                        stats='Shoots',
+                                        match_rating=dict(sorted(matchs_rating['Shoots'].items())),
+                                        range=(-50,50))
+    results_shoots = rp_shoots.fit(show_graphs=False)   
      
     rp_ts = RegressionPolynomial(league_name=league_name,
                                         stats='Target Shoots',
@@ -51,6 +58,7 @@ def main(league_name, match_rating_path):
     all_results[league_name].update({
         'w1': [],
         'Gols': results_gols,
+        'Shoots': results_shoots,
         'Target Shoots': results_ts
     })
     

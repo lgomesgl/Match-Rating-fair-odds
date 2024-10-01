@@ -1,5 +1,5 @@
 class MatchRating:
-    def __init__(self, matchs_rating, estatistic):
+    def __init__(self, matchs_rating, estatistic, gols):
         """
         Initializes the MatchRating class with the provided match ratings, statistic type, and league.
         
@@ -8,6 +8,7 @@ class MatchRating:
         """
         self.estatistic = estatistic
         self.matchs_rating = matchs_rating
+        self.gols = gols
         
     def get_columns(self):
         """
@@ -72,10 +73,22 @@ class MatchRating:
             # Get the final result for the match
             ftr = row['FTR']
             
+            # Gols in the match
+            gols_match = row['FTHG'] + row['FTAG']      
+            if gols_match > self.gols:
+                keys_gols = '+gols'
+            else:
+                keys_gols = '-gols'
+            
             # Update match ratings dictionary
             if match_rating not in self.matchs_rating[self.estatistic]:
-                self.matchs_rating[self.estatistic][match_rating] = {'H': 0, 'D': 0, 'A': 0}
+                self.matchs_rating[self.estatistic][match_rating] = {'H': 0, 'D': 0, 'A': 0, '+gols': 0, '-gols': 0}
                 
             # Update the corresponding outcome (H, D, A)
             if ftr in self.matchs_rating[self.estatistic][match_rating]:
                 self.matchs_rating[self.estatistic][match_rating][ftr] += 1
+                
+            # Update the corresponding outcome ('+gols', '-gols')
+            if keys_gols in self.matchs_rating[self.estatistic][match_rating]:
+                self.matchs_rating[self.estatistic][match_rating][keys_gols] += 1
+                
