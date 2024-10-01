@@ -7,7 +7,7 @@ from sklearn.metrics import r2_score
 class RegressionPolynomial:
     def __init__(self, league_name, stats, match_rating, range):
         """
-        Constructor method to initialize the class with league name, statistics type,
+        Initialize the class with league name, statistics type,
         match rating dictionary, and range for match ratings.
         """
         self.league_name = league_name
@@ -15,12 +15,12 @@ class RegressionPolynomial:
         self.match_rating = match_rating
         self.range = range
         
-    def transform_match2percentages(self):
+    def _transform_match2percentages(self):
         """
         Converts the match rating data (home, draw, away) into percentages and stores them
         in self.H_perc, self.D_perc, and self.A_perc arrays.
         """
-        self.keys = np.array(list(self.match_rating.keys()))  # Convert keys to NumPy array for regression
+        self.keys = np.array(list(self.match_rating.keys())) 
         H_perc = []
         D_perc = []
         A_perc = []
@@ -28,7 +28,7 @@ class RegressionPolynomial:
         # Calculate percentages for Home (H), Draw (D), and Away (A)
         for key in self.keys:
             values = self.match_rating[key]
-            total = sum(values.values())  # Sum of H, D, A
+            total = sum(values.values())  
             if total > 0:
                 H_perc.append((values['H'] / total) * 100)
                 D_perc.append((values['D'] / total) * 100)
@@ -43,7 +43,22 @@ class RegressionPolynomial:
         self.D_perc = np.array(D_perc)
         self.A_perc = np.array(A_perc)
         
-    def find_best_polynomial_fit(self, X, y, max_degree=4, threshold=0.05):
+    def _remove_outliers(self, X, y):
+        q1 = np.percentile(y, 25)
+        q3 = np.percentile(y, 75)
+        irq = q3 - q1
+        
+        inferior_limit = q1 - 1.5 * irq
+        superior_limit = q3 + 1.5 * irq
+        
+        filter = (y >= inferior_limit) & (y <= superior_limit)
+        
+        X_without_outliers = X[filter]
+        y_without_outliers = y[filter]
+        
+        return X_without_outliers, y_without_outliers
+                
+    def _find_best_polynomial_fit(self, X, y, max_degree=4, threshold=0.05):
         """
         Finds the best polynomial fit for the given data X and y by testing polynomials 
         up to a specified degree. Returns the best model, the degree, and the R² score.
@@ -73,7 +88,7 @@ class RegressionPolynomial:
             
         return best_model, best_degree, best_r2 
 
-    def plot_regression(self, keys, match_percentages, color, label):
+    def _plot_regression(self, keys, match_percentages, color, label):
         """
         Plots the data points and fits a polynomial regression curve to them.
         Displays the best polynomial fit and its R² score.
@@ -81,7 +96,7 @@ class RegressionPolynomial:
         plt.plot(keys, match_percentages, f'{color}o', label=label)  # Plot original data points
     
         # Find the best polynomial fit
-        best_model, best_degree, best_r2 = self.find_best_polynomial_fit(X=keys, y=match_percentages)
+        best_model, best_degree, best_r2 = self._find_best_polynomial_fit(X=keys, y=match_percentages)
         
         # Apply polynomial transformation and predict the fit
         poly = PolynomialFeatures(degree=best_degree)
@@ -105,26 +120,29 @@ class RegressionPolynomial:
         Optionally displays the graphs if show_graphs is set to True.
         """
         plt.subplot(3, 1, 1)
-        best_model_H, best_degree_H, best_r2_H = self.plot_regression(keys=self.keys, match_percentages=self.H_perc, color='b', label='H')
+        keys, H_perc = self._remove_outliers(X=self.keys, y=self.H_perc)
+        best_model_H, best_degree_H, best_r2_H = self._plot_regression(keys=keys, match_percentages=H_perc, color='b', label='H')
         
         plt.subplot(3, 1, 2)
-        best_model_D, best_degree_D, best_r2_D = self.plot_regression(keys=self.keys, match_percentages=self.D_perc, color='g', label='D')
+        keys, D_perc = self._remove_outliers(X=self.keys, y=self.D_perc)
+        best_model_D, best_degree_D, best_r2_D = self._plot_regression(keys=keys, match_percentages=D_perc, color='g', label='D')
 
         plt.subplot(3, 1, 3)
-        best_model_A, best_degree_A, best_r2_A = self.plot_regression(keys=self.keys, match_percentages=self.A_perc, color='r', label='A')
+        keys, A_perc = self._remove_outliers(X=self.keys, y=self.A_perc)
+        best_model_A, best_degree_A, best_r2_A = self._plot_regression(keys=keys, match_percentages=A_perc, color='r', label='A')
         
-        # Save the graph as a PNG file
+        # Save the graph 
         plt.savefig(fr'D:\LUCAS\Match Rating\Database\{ self.league_name }\Graphs\{ self.stats }.png')
         
         if show_graphs:
             plt.tight_layout()
-            plt.show()  # Show the graphs if requested
+            plt.show()  
         
         plt.close()  # Close the figure to free up memory
         
         return best_model_H, best_model_D, best_model_A
     
-    def __fix_percentages(self, H, D, A):
+    def _fix_percentages(self, H, D, A):
         """
         Helper method to adjust the percentages of H, D, and A to be non-negative and normalized to 100%.
         """
@@ -172,9 +190,9 @@ class RegressionPolynomial:
             H_pred = f(x, interc_h, coefs_h)
             D_pred = f(x, interc_d, coefs_d)
             A_pred = f(x, interc_a, coefs_a)
-            
+                
             # Adjust percentages
-            H_perc, D_perc, A_perc = self.__fix_percentages(H_pred, D_pred, A_pred)
+            H_perc, D_perc, A_perc = self._fix_percentages(H_pred, D_pred, A_pred)
             
             # Save to results dictionary
             resultados[x] = {'H': round(H_perc, 2), 'D': round(D_perc, 2), 'A': round(A_perc, 2)}
@@ -188,6 +206,6 @@ class RegressionPolynomial:
         2. Generate graphs and save them.
         3. Re-adjust match ratings using the best polynomial models.
         """
-        self.transform_match2percentages()  # Convert match ratings to percentages
+        self._transform_match2percentages()  # Convert match ratings to percentages
         best_model_H, best_model_D, best_model_A = self.graphs(show_graphs)  # Generate graphs and return best models
         return self.reajust_match_ratings(best_model_H, best_model_D, best_model_A, self.range[0], self.range[1])  # Re-adjust ratings

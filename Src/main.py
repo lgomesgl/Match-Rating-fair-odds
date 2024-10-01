@@ -29,10 +29,8 @@ def main(league_name, match_rating_path):
         for stats in ['Gols','Target Shoots']:
             match_rat = MatchRating(matchs_rating=matchs_rating, estatistic=stats)
             match_rat.get_columns()
-            match_rat.get_match_rating(data=df)
-            
+            match_rat.get_match_rating(data=df) 
     
-            
     rp_gols = RegressionPolynomial(league_name=league_name,
                                         stats='Gols',
                                         match_rating=dict(sorted(matchs_rating['Gols'].items())),
