@@ -24,24 +24,35 @@ class RegressionPolynomial:
         H_perc = []
         D_perc = []
         A_perc = []
+        More_gols_perc = []
+        Less_gols_perc = []
 
         # Calculate percentages for Home (H), Draw (D), and Away (A)
         for key in self.keys:
             values = self.match_rating[key]
-            total = sum(values.values())  
-            if total > 0:
-                H_perc.append((values['H'] / total) * 100)
-                D_perc.append((values['D'] / total) * 100)
-                A_perc.append((values['A'] / total) * 100)
+            total_ftr = sum(list(values.values())[:3])
+            total_gols = sum(list(values.values())[3:])
+            if total_ftr > 0:
+                H_perc.append((values['H'] / total_ftr) * 100)
+                D_perc.append((values['D'] / total_ftr) * 100)
+                A_perc.append((values['A'] / total_ftr) * 100)
+            if total_gols > 0:
+                More_gols_perc.append((values['+gols'] / total_gols) * 100)
+                Less_gols_perc.append((values['-gols'] / total_gols) * 100)
             else:
                 H_perc.append(0)
                 D_perc.append(0)
                 A_perc.append(0)
+                More_gols_perc.append(0)
+                Less_gols_perc.append(0)
 
         # Convert lists to NumPy arrays
         self.H_perc = np.array(H_perc)
         self.D_perc = np.array(D_perc)
         self.A_perc = np.array(A_perc)
+        
+        self.More_gols_perc = np.array(More_gols_perc)
+        self.Less_gols_perc = np.array(Less_gols_perc)
         
     def _remove_outliers(self, X, y):
         q1 = np.percentile(y, 25)
@@ -132,7 +143,19 @@ class RegressionPolynomial:
         best_model_A, best_degree_A, best_r2_A = self._plot_regression(keys=keys, match_percentages=A_perc, color='r', label='A')
         
         # Save the graph 
-        plt.savefig(fr'D:\LUCAS\Match Rating\Database\{ self.league_name }\Graphs\{ self.stats }.png')
+        plt.savefig(fr'D:\LUCAS\Match Rating\Database\{ self.league_name }\Graphs\{ self.stats }_ftr.png')
+        
+        plt.close()
+        
+        plt.subplot(2, 1, 1)
+        keys, More_gols = self._remove_outliers(X=self.keys, y=self.More_gols_perc)
+        best_model_Mgols, best_degree_Mgols, best_r2_Mgols = self._plot_regression(keys=keys, match_percentages=More_gols, color='b', label='More Gols')
+        
+        plt.subplot(2, 1, 2)
+        keys, Less_gols = self._remove_outliers(X=self.keys, y=self.Less_gols_perc)
+        best_model_Lgols, best_degree_Lgols, best_r2_Lgols = self._plot_regression(keys=keys, match_percentages=Less_gols, color='g', label='Less Gols')
+        
+        plt.savefig(fr'D:\LUCAS\Match Rating\Database\{ self.league_name }\Graphs\{ self.stats }_gols.png')
         
         if show_graphs:
             plt.tight_layout()
