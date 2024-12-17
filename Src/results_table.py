@@ -1,8 +1,6 @@
 import pandas as pd
 
-
 class Table:
-
     def __init__(self, league):
         """ 
         table class sorted by points in each match
@@ -18,7 +16,7 @@ class Table:
         self.league = league
         self.table = {}
 
-    #create the table based on .csv given
+    # create the table based on .csv given
     def table(self, path):
         dados = pd.read_csv(path)
         for i in range(1, len(dados)):

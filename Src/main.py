@@ -7,7 +7,10 @@ from tools import normalize_data, load_json_file, save_json_file
 from match import MatchRating
 from regression_polynomial import RegressionPolynomial
 from combined_matchs import OneModel
-from optimizer import OptimizerAdam
+from optimizer import OptimizerAdam, OptimizerAdaDelta
+
+root = os.path.dirname(os.path.abspath(__file__))
+parent_path = os.path.dirname(root)
 
 def main(league_name, match_rating_path):
     logging.info(f'Start into { league_name }')
@@ -17,7 +20,7 @@ def main(league_name, match_rating_path):
     
     logging.info(f'Start into train data')
     # Train
-    file_train = fr'D:\LUCAS\Match Rating\Database\{ league_name }\train'
+    file_train = fr'{ parent_path }/database/{ league_name }/train'
     datas_train = os.listdir(file_train)
 
     matchs_rating = {
@@ -35,19 +38,19 @@ def main(league_name, match_rating_path):
     rp_gols = RegressionPolynomial(league_name=league_name,
                                         stats='Gols',
                                         match_rating=dict(sorted(matchs_rating['Gols'].items())),
-                                        range=(-29,28))
+                                        range=(-40,40))
     results_gols = rp_gols.fit(show_graphs=False) 
     
     rp_shoots = RegressionPolynomial(league_name=league_name,
                                         stats='Shoots',
                                         match_rating=dict(sorted(matchs_rating['Shoots'].items())),
-                                        range=(-50,50))
+                                        range=(-70,70))
     results_shoots = rp_shoots.fit(show_graphs=False)   
      
     rp_ts = RegressionPolynomial(league_name=league_name,
                                         stats='Target Shoots',
                                         match_rating=dict(sorted(matchs_rating['Target Shoots'].items())),
-                                        range=(-57,61))
+                                        range=(-80,80))
     results_ts = rp_ts.fit(show_graphs=False)                              
     
     # Initialize league results if not present
@@ -64,10 +67,11 @@ def main(league_name, match_rating_path):
     
     # Test
     logging.info(f'Start into test data')
-    file_test = fr'D:\LUCAS\Match Rating\Database\{ league_name }\test'
+    file_test = f'{parent_path}/database/{ league_name }/test'
     datas_test = os.listdir(file_test)
     
     optimizer = OptimizerAdam(learning_rate=0.001)
+    # optimizer = OptimizerAdaDelta()
     
     w1 = 0.55 # Chute inicial
     for data in datas_test:
@@ -78,10 +82,10 @@ def main(league_name, match_rating_path):
     
     all_results[league_name]['w1'] = w1
     
-    # Save updated results to JSON file
+    # # Save updated results to JSON file
     save_json_file(match_rating_path, all_results)
     
 if __name__ == '__main__':
-    for league in ['Premier League', 'La Liga', 'Bundesliga', 'SerieA', 'Ligue1']:
-        main(league_name=league, match_rating_path=r'D:\LUCAS\Football_2.0\Database\Static\matchs_ratings.json')
+    for league in ['Premier League', 'La Liga', 'Bundesliga', 'Serie A', 'Ligue 1']:
+        main(league_name=league, match_rating_path=f'C:/home/projects/footballApp/database/static/matchs_ratings.json')
          
