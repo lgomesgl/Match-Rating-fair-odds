@@ -3,11 +3,11 @@ from optimizer import OptimizerAdam
 
 class OneModel:
     """
-    A model to predict match outcomes based on historical data and ratings.
+        A model to predict match outcomes based on historical data and ratings.
 
-    Parameters:
-    data (DataFrame): Historical match data.
-    models_ratings (dict): Ratings models for different match statistics.
+        Parameters:
+        data (DataFrame): Historical match data.
+        models_ratings (dict): Ratings models for different match statistics.
     """
 
     def __init__(self, data, models_ratings):

@@ -1,10 +1,10 @@
 class MatchRating:
     def __init__(self, matchs_rating, estatistic, gols):
         """
-        Initializes the MatchRating class with the provided match ratings, statistic type, and league.
-        
-        :param matchs_rating: Dictionary to store match ratings.
-        :param estatistic: The statistic to be used ('Gols', 'Shoots', 'Target Shoots').
+            Initializes the MatchRating class with the provided match ratings, statistic type, and league.
+            
+            :param matchs_rating: Dictionary to store match ratings.
+            :param estatistic: The statistic to be used ('Gols', 'Shoots', 'Target Shoots').
         """
         self.estatistic = estatistic
         self.matchs_rating = matchs_rating
@@ -12,7 +12,7 @@ class MatchRating:
         
     def get_columns(self):
         """
-        Maps the statistic type to the appropriate columns in the data.
+            Maps the statistic type to the appropriate columns in the data.
         """
         columns_map = {
             'Gols': ['FTHG', 'FTAG'],
@@ -24,10 +24,10 @@ class MatchRating:
         
     def get_match_rating(self, data, n_matchs_behind=5):
         """
-        Calculates the match ratings based on the number of matches behind and updates the match ratings dictionary.
-        
-        :param data: DataFrame containing the match data.
-        :param n_matchs_behind: Number of matches to look back for calculating ratings (default is 5).
+            Calculates the match ratings based on the number of matches behind and updates the match ratings dictionary.
+            
+            :param data: DataFrame containing the match data.
+            :param n_matchs_behind: Number of matches to look back for calculating ratings (default is 5).
         """
         # Iterate through matches, starting after the number of matches behind
         for i in range(n_matchs_behind*10+1, data.shape[0]):
@@ -40,10 +40,10 @@ class MatchRating:
             
             def get_gols(team):
                 """
-                Calculates goals scored and conceded for a given team in the past matches.
-                
-                :param team: The team name for which to calculate goals.
-                :return: Tuple of (goals scored, goals conceded).
+                    Calculates goals scored and conceded for a given team in the past matches.
+                    
+                    :param team: The team name for which to calculate goals.
+                    :return: Tuple of (goals scored, goals conceded).
                 """
                 feitos = 0
                 concedidos = 0            

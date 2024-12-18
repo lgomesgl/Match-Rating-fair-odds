@@ -4,11 +4,11 @@ import json
 
 def normalize_data(data, method=''):
     """
-    Normalizes the data based on the chosen method.
-    
-    :param data: Dictionary containing 'H', 'D', 'A' values for each key.
-    :param method: The normalization method to apply. Options are ['min_max', 'z_score', 'direct', 'softmax', 'rank'].
-    :return: Normalized data dictionary.
+        Normalizes the data based on the chosen method.
+        
+        :param data: Dictionary containing 'H', 'D', 'A' values for each key.
+        :param method: The normalization method to apply. Options are ['min_max', 'z_score', 'direct', 'softmax', 'rank'].
+        :return: Normalized data dictionary.
     """
     
     def min_max_normalize(values):
@@ -27,7 +27,7 @@ def normalize_data(data, method=''):
         return [value * renormalize for value in values]
             
     def softmax(x):
-        e_x = np.exp(x - np.max(x))  # Numerical stability for softmax
+        e_x = np.exp(x - np.max(x)) 
         return e_x / e_x.sum()
 
     def rank_normalization(values):
@@ -47,25 +47,28 @@ def normalize_data(data, method=''):
         H_values = min_max_normalize(H_values)
         D_values = min_max_normalize(D_values)
         A_values = min_max_normalize(A_values)
+
     elif method == 'z_score':
         H_values = z_score_normalize(H_values)
         D_values = z_score_normalize(D_values)
         A_values = z_score_normalize(A_values)
+
     elif method == 'direct':
         H_values = direct_renormalize(H_values)
         D_values = direct_renormalize(D_values)
         A_values = direct_renormalize(A_values)
+
     elif method == 'softmax':
         for i, key in enumerate(data.keys()):
             ratings = [H_values[i], D_values[i], A_values[i]]
             probabilities = softmax(ratings)
             H_values[i], D_values[i], A_values[i] = probabilities
+
     elif method == 'rank':
         H_values = rank_normalization(H_values)
         D_values = rank_normalization(D_values)
         A_values = rank_normalization(A_values)
 
-    # Update the original dictionary with normalized values
     for i, key in enumerate(data.keys()):
         data[key]['H_normalized'] = H_values[i]
         data[key]['D_normalized'] = D_values[i]
@@ -80,9 +83,5 @@ def load_json_file(file_path):
     return {}
 
 def save_json_file(output_path, json_data):
-    # Primeiro, converte todos os valores que não são compatíveis com JSON
-    # json_data = convert_values_for_json(json_data)
-    
-    # Salva o arquivo JSON
     with open(output_path, 'w') as json_file:
         json.dump(json_data, json_file, indent=4)

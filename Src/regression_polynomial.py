@@ -8,8 +8,8 @@ from sklearn.metrics import r2_score
 class RegressionPolynomial:
     def __init__(self, league_name, stats, match_rating, range):
         """
-        Initialize the class with league name, statistics type,
-        match rating dictionary, and range for match ratings.
+            Initialize the class with league name, statistics type,
+            match rating dictionary, and range for match ratings.
         """
         self.league_name = league_name
         self.stats = stats
@@ -18,8 +18,8 @@ class RegressionPolynomial:
         
     def _transform_match2percentages(self):
         """
-        Converts the match rating data (home, draw, away) into percentages and stores them
-        in self.H_perc, self.D_perc, and self.A_perc arrays.
+            Converts the match rating data (home, draw, away) into percentages and stores them
+            in self.H_perc, self.D_perc, and self.A_perc arrays.
         """
         self.keys = np.array(list(self.match_rating.keys())) 
         H_perc = []
@@ -33,13 +33,16 @@ class RegressionPolynomial:
             values = self.match_rating[key]
             total_ftr = sum(list(values.values())[:3])
             total_gols = sum(list(values.values())[3:])
+
             if total_ftr > 0:
                 H_perc.append((values['H'] / total_ftr) * 100)
                 D_perc.append((values['D'] / total_ftr) * 100)
                 A_perc.append((values['A'] / total_ftr) * 100)
+
             if total_gols > 0:
                 More_gols_perc.append((values['+gols'] / total_gols) * 100)
                 Less_gols_perc.append((values['-gols'] / total_gols) * 100)
+
             else:
                 H_perc.append(0)
                 D_perc.append(0)
@@ -47,7 +50,6 @@ class RegressionPolynomial:
                 More_gols_perc.append(0)
                 Less_gols_perc.append(0)
 
-        # Convert lists to NumPy arrays
         self.H_perc = np.array(H_perc)
         self.D_perc = np.array(D_perc)
         self.A_perc = np.array(A_perc)
@@ -72,8 +74,8 @@ class RegressionPolynomial:
                 
     def _find_best_polynomial_fit(self, X, y, max_degree=4, threshold=0.05):
         """
-        Finds the best polynomial fit for the given data X and y by testing polynomials 
-        up to a specified degree. Returns the best model, the degree, and the R² score.
+            Finds the best polynomial fit for the given data X and y by testing polynomials 
+            up to a specified degree. Returns the best model, the degree, and the R² score.
         """
         best_degree = 1
         best_r2 = -np.inf
@@ -88,11 +90,11 @@ class RegressionPolynomial:
             model = LinearRegression().fit(X_poly, y)
             y_pred = model.predict(X_poly)
             
-            # Calculate R² score
+            # Calculate score
             r2 = r2_score(y, y_pred)
             r2_values.append(r2)
 
-            # Check if current model has the best R² score
+            # Check if current model has the best score
             if r2 > best_r2 + threshold:
                 best_r2 = r2
                 best_degree = degree
@@ -102,8 +104,8 @@ class RegressionPolynomial:
 
     def _plot_regression(self, keys, match_percentages, color, label):
         """
-        Plots the data points and fits a polynomial regression curve to them.
-        Displays the best polynomial fit and its R² score.
+            Plots the data points and fits a polynomial regression curve to them.
+            Displays the best polynomial fit and its R² score.
         """
         plt.plot(keys, match_percentages, f'{color}o', label=label)  # Plot original data points
     
@@ -118,7 +120,11 @@ class RegressionPolynomial:
         predictions = best_model.predict(keys_poly)
         
         # Plot the polynomial regression curve
-        plt.plot(keys, predictions, f'{color}-', label=f'Polynomial Regression {label} (Degree {best_degree}): $R^2 = {best_r2:.2f}$')
+        plt.plot(keys, 
+                 predictions, 
+                 f'{color}-', 
+                 label=f'Polynomial Regression {label} (Degree {best_degree}): $R^2 = {best_r2:.2f}$')
+        
         plt.title(f'Percentage of {label} - Best Fit $R^2$ = {best_r2:.2f}')
         plt.ylabel('Percentage (%)')
         plt.legend()
@@ -128,8 +134,8 @@ class RegressionPolynomial:
                 
     def graphs(self, show_graphs):        
         """
-        Generates three graphs for Home, Draw, and Away percentages and saves them as a PNG file.
-        Optionally displays the graphs if show_graphs is set to True.
+            Generates three graphs for Home, Draw, and Away percentages and saves them as a PNG file.
+            Optionally displays the graphs if show_graphs is set to True.
         """
         #Ftr
         plt.subplot(3, 1, 1)
@@ -166,13 +172,13 @@ class RegressionPolynomial:
             plt.tight_layout()
             plt.show()  
         
-        plt.close()  # Close the figure to free up memory
+        plt.close()  
         
         return best_model_H, best_model_D, best_model_A, best_model_Mgols, best_model_Lgols
     
     def _fix_percentages(self, H, D, A, MG, LG):
         """
-        Helper method to adjust the percentages of H, D, and A to be non-negative and normalized to 100%.
+            Helper method to adjust the percentages of H, D, and A to be non-negative and normalized to 100%.
         """
         H = max(H, 0)
         D = max(D, 0)
@@ -180,7 +186,7 @@ class RegressionPolynomial:
         
         MG = max(MG, 0)
         LG = max(LG, 0)
-        # Calculate the total sum
+
         total_ftr = H + D + A
         
         if total_ftr > 0:
@@ -188,6 +194,7 @@ class RegressionPolynomial:
             H_perc = (H / total_ftr) * 100
             D_perc = (D / total_ftr) * 100
             A_perc = (A / total_ftr) * 100
+
         else:
             # If total is zero, set all to 0%
             H_perc = D_perc = A_perc = 0
@@ -196,15 +203,23 @@ class RegressionPolynomial:
         if total_gols > 0:
             MG_perc = (MG / total_gols) * 100
             LG_perc = (LG / total_gols) * 100
+
         else:
             MG_perc = LG_perc = 0
         
         return H_perc, D_perc, A_perc, MG_perc, LG_perc
 
-    def reajust_match_ratings(self, best_model_H, best_model_D, best_model_A, best_model_Mgols, best_model_Lgols, x_min, x_max):
+    def reajust_match_ratings(self, 
+                              best_model_H, 
+                              best_model_D, 
+                              best_model_A, 
+                              best_model_Mgols, 
+                              best_model_Lgols, 
+                              x_min, 
+                              x_max):
         """
-        Re-adjusts match ratings (H, D, A percentages) for the given range using the best polynomial
-        models obtained. Returns a dictionary of results for each x value.
+            Re-adjusts match ratings (H, D, A percentages) for the given range using the best polynomial
+            models obtained. Returns a dictionary of results for each x range values [x_min, x_max].
         """
         resultados = {}
     
@@ -247,10 +262,10 @@ class RegressionPolynomial:
     
     def fit(self, show_graphs=False):
         """
-        Main method to execute the full process:
-        1. Transform match ratings into percentages.
-        2. Generate graphs and save them.
-        3. Re-adjust match ratings using the best polynomial models.
+            Main method to execute the full process:
+            1. Transform match ratings into percentages.
+            2. Generate graphs and save them.
+            3. Re-adjust match ratings using the best polynomial models.
         """
         self._transform_match2percentages()  # Convert match ratings to percentages
         best_model_H, best_model_D, best_model_A, best_model_Mgols, best_model_Lgols = self.graphs(show_graphs)  # Generate graphs and return best models

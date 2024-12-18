@@ -13,13 +13,10 @@ root = os.path.dirname(os.path.abspath(__file__))
 parent_path = os.path.dirname(root)
 
 def main(league_name, match_rating_path):
-    logging.info(f'Start into { league_name }')
-    
-    # Load existing results
+    logging.info(f'Start into { league_name }')    
     all_results = load_json_file(match_rating_path)
-    
+
     logging.info(f'Start into train data')
-    # Train
     file_train = fr'{ parent_path }/database/{ league_name }/train'
     datas_train = os.listdir(file_train)
 
@@ -28,6 +25,7 @@ def main(league_name, match_rating_path):
         'Shoots':{},
         'Target Shoots':{}
     }
+
     for data in datas_train:
         df = pd.read_csv(os.path.join(file_train, data))
         for stats in ['Gols','Shoots','Target Shoots']:
@@ -53,11 +51,9 @@ def main(league_name, match_rating_path):
                                         range=(-80,80))
     results_ts = rp_ts.fit(show_graphs=False)                              
     
-    # Initialize league results if not present
     if league_name not in all_results:
         all_results[league_name] = {}
         
-    # Update league results
     all_results[league_name].update({
         'w1': [],
         'Gols': results_gols,
@@ -65,7 +61,6 @@ def main(league_name, match_rating_path):
         'Target Shoots': results_ts
     })
     
-    # Test
     logging.info(f'Start into test data')
     file_test = f'{parent_path}/database/{ league_name }/test'
     datas_test = os.listdir(file_test)
@@ -73,7 +68,7 @@ def main(league_name, match_rating_path):
     optimizer = OptimizerAdam(learning_rate=0.001)
     # optimizer = OptimizerAdaDelta()
     
-    w1 = 0.55 # Chute inicial
+    w1 = 0.55 # initial kick for weight
     for data in datas_test:
         df = pd.read_csv(os.path.join(file_test, data))
         
@@ -82,7 +77,6 @@ def main(league_name, match_rating_path):
     
     all_results[league_name]['w1'] = w1
     
-    # # Save updated results to JSON file
     save_json_file(match_rating_path, all_results)
     
 if __name__ == '__main__':

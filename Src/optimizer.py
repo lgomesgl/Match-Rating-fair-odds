@@ -2,13 +2,13 @@ import numpy as np
 
 class OptimizerAdam:
     """
-    Adam Optimizer for optimizing weights during training.
+        Adam Optimizer for optimizing weights during training.
 
-    Parameters:
-    learning_rate (float): The learning rate for the optimizer.
-    beta1 (float): Exponential decay rate for the first moment estimates.
-    beta2 (float): Exponential decay rate for the second moment estimates.
-    epsilon (float): Small constant to prevent division by zero.
+        Parameters:
+        learning_rate (float): The learning rate for the optimizer.
+        beta1 (float): Exponential decay rate for the first moment estimates.
+        beta2 (float): Exponential decay rate for the second moment estimates.
+        epsilon (float): Small constant to prevent division by zero.
     """
 
     def __init__(self, learning_rate=0.001, beta1=0.9, beta2=0.999, epsilon=1e-8):
@@ -22,19 +22,19 @@ class OptimizerAdam:
         
     def update(self, w, grad):
         """
-        Update weights using Adam optimization.
+            Update weights using Adam optimization.
 
-        Parameters:
-        w (np.ndarray): Current weights.
-        grad (np.ndarray): Gradient of the loss function w.r.t. weights.
+            Parameters:
+            w (np.ndarray): Current weights.
+            grad (np.ndarray): Gradient of the loss function w.r.t. weights.
 
-        Returns:
-        np.ndarray: Updated weights.
+            Returns:
+            np.ndarray: Updated weights.
         """
-        
-        # Initialize m and v if they are None
+
         if self.m is None:
             self.m = np.zeros_like(grad)
+            
         if self.v is None:
             self.v = np.zeros_like(grad)
 
@@ -53,11 +53,11 @@ class OptimizerAdam:
 class OptimizerAdaDelta:
     def __init__(self, gamma=0.9, epsilon=1e-8):
         """
-        Initialize the AdaDelta optimizer.
+            Initialize the AdaDelta optimizer.
 
-        Parameters:
-        - gamma: Decay rate for the running average of the squared gradients.
-        - epsilon: A small value to prevent division by zero.
+            Parameters:
+            - gamma: Decay rate for the running average of the squared gradients.
+            - epsilon: A small value to prevent division by zero.
         """
         self.gamma = gamma
         self.epsilon = epsilon
@@ -68,14 +68,14 @@ class OptimizerAdaDelta:
         
     def update(self, w, grad):
         """
-        Update the weight 'w' using the gradient 'grad' and AdaDelta optimization.
+            Update the weight 'w' using the gradient 'grad' and AdaDelta optimization.
 
-        Parameters:
-        - w: Current weight.
-        - grad: Gradient of the error with respect to the weight.
+            Parameters:
+            - w: Current weight.
+            - grad: Gradient of the error with respect to the weight.
 
-        Returns:
-        - Updated weight 'w'.
+            Returns:
+            - Updated weight 'w'.'
         """
         # Accumulate gradient squared
         self.accumulated_grad = self.gamma * self.accumulated_grad + (1-self.gamma) * grad**2
