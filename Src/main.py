@@ -3,7 +3,7 @@ import pandas as pd
 import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-from tools import normalize_data, load_json_file, save_json_file
+from tools import initial_guess_value, normalize_data, load_json_file, save_json_file
 from match import MatchRating
 from regression_polynomial import RegressionPolynomial
 from combined_matchs import OneModel
@@ -68,7 +68,8 @@ def main(league_name, match_rating_path):
     optimizer = OptimizerAdam(learning_rate=0.001)
     # optimizer = OptimizerAdaDelta()
     
-    w1 = 0.55 # initial kick for weight
+    #w1 = 0.55 # initial kick for weight
+    w1 = initial_guess_value(league_name=league_name)
     for data in datas_test:
         df = pd.read_csv(os.path.join(file_test, data))
         

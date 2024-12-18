@@ -76,6 +76,18 @@ def normalize_data(data, method=''):
         
     return data
 
+def initial_guess_value(league_name: str) -> float:
+    if league_name  ==  'Premier League':
+        return 0.45
+    elif league_name == 'La Liga':
+        return 0.43
+    elif league_name == 'Bundesliga':
+        return 0.63
+    elif league_name == 'Serie A':
+        return 0.60
+    elif league_name == 'Ligue 1':
+        return 0.55
+
 def load_json_file(file_path):
     if os.path.exists(file_path):
         with open(file_path, 'r') as f:
