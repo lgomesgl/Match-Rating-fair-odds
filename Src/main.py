@@ -68,7 +68,6 @@ def main(league_name, match_rating_path):
     optimizer = OptimizerAdam(learning_rate=0.001)
     # optimizer = OptimizerAdaDelta()
     
-    #w1 = 0.55 # initial kick for weight
     w1 = initial_guess_value(league_name=league_name)
     for data in datas_test:
         df = pd.read_csv(os.path.join(file_test, data))
