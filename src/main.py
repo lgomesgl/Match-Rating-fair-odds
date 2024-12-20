@@ -28,7 +28,7 @@ def main(league_name, match_rating_path):
 
     for data in datas_train:
         df = pd.read_csv(os.path.join(file_train, data))
-        for stats in ['Gols','Shoots','Target Shoots']:
+        for stats in ['Gols', 'Shoots', 'Target Shoots']:
             match_rat = MatchRating(matchs_rating=matchs_rating, estatistic=stats, gols=1.5)
             match_rat.get_columns()
             match_rat.get_match_rating(data=df) 

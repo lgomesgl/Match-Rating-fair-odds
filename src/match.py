@@ -1,16 +1,19 @@
+from typing import Dict, Tuple
+import pandas as pd
+
 class MatchRating:
-    def __init__(self, matchs_rating, estatistic, gols):
+    def __init__(self, matchs_rating: Dict, estatistic: str, gols: float = 1.5):
         """
             Initializes the MatchRating class with the provided match ratings, statistic type, and league.
             
             :param matchs_rating: Dictionary to store match ratings.
             :param estatistic: The statistic to be used ('Gols', 'Shoots', 'Target Shoots').
         """
-        self.estatistic = estatistic
         self.matchs_rating = matchs_rating
+        self.estatistic = estatistic
         self.gols = gols
         
-    def get_columns(self):
+    def get_columns(self) -> None:
         """
             Maps the statistic type to the appropriate columns in the data.
         """
@@ -21,8 +24,33 @@ class MatchRating:
         }
         
         self.columns = columns_map.get(self.estatistic)
+
+        if not self.columns:
+            raise ValueError(f"This statistic its not to be use. Choose between 'Gols', 'Shoots', 'Target Shoots'")
         
-    def get_match_rating(self, data, n_matchs_behind=5):
+    def _get_gols(self, data_behind: pd.DataFrame, team: str) -> Tuple[int, int]:
+            """
+                Calculates goals scored and conceded for a given team in the past matches.
+                
+                :param team: The team name for which to calculate goals.
+                :return: Tuple of (goals scored, goals conceded).
+            """
+            score = 0
+            conceded = 0            
+            
+            # Goals for home matches
+            data_home = data_behind[(data_behind['HomeTeam'] == team)]                
+            score += int(data_home[self.columns[0]].sum())
+            conceded += int(data_home[self.columns[1]].sum())
+            
+            # Goals for away matches
+            data_away = data_behind[(data_behind['AwayTeam'] == team)]
+            score += int(data_away[self.columns[1]].sum())
+            conceded += int(data_away[self.columns[0]].sum())
+            
+            return score, conceded
+
+    def get_match_rating(self, data: pd.DataFrame, n_matchs_behind:int = 5) -> None:
         """
             Calculates the match ratings based on the number of matches behind and updates the match ratings dictionary.
             
@@ -37,36 +65,14 @@ class MatchRating:
             row = data.loc[i]
             home_team = row['HomeTeam']
             away_team = row['AwayTeam']
-            
-            def get_gols(team):
-                """
-                    Calculates goals scored and conceded for a given team in the past matches.
-                    
-                    :param team: The team name for which to calculate goals.
-                    :return: Tuple of (goals scored, goals conceded).
-                """
-                feitos = 0
-                concedidos = 0            
-                
-                # Goals for home matches
-                data_home = data_behind[(data_behind['HomeTeam'] == team)]                
-                feitos += int(data_home[self.columns[0]].sum())
-                concedidos += int(data_home[self.columns[1]].sum())
-                
-                # Goals for away matches
-                data_away = data_behind[(data_behind['AwayTeam'] == team)]
-                feitos += int(data_away[self.columns[1]].sum())
-                concedidos += int(data_away[self.columns[0]].sum())
-                
-                return feitos, concedidos
-              
+
             # Calculate goals for home and away teams
-            feitos_home, concedidos_home = get_gols(home_team)
-            feitos_away, concedidos_away = get_gols(away_team)
+            score_home, conceded_home = self._get_gols(data_behind=data_behind, team=home_team)
+            score_away, conceded_away = self._get_gols(data_behind=data_behind, team=away_team)
             
             # Calculate match rating for both teams
-            match_team_home = feitos_home - concedidos_home
-            match_team_away = feitos_away - concedidos_away
+            match_team_home = score_home - conceded_home
+            match_team_away = score_away - conceded_away
             
             match_rating = match_team_home - match_team_away
              
