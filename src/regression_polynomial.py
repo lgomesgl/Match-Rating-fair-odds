@@ -1,12 +1,17 @@
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+from typing import Dict, Tuple, Optional
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.metrics import r2_score
 
 class RegressionPolynomial:
-    def __init__(self, league_name, stats, match_rating, range):
+    def __init__(self, 
+                 league_name: str, 
+                 stats: str, 
+                 match_rating: Dict, 
+                 range: Tuple[int, int]):
         """
             Initialize the class with league name, statistics type,
             match rating dictionary, and range for match ratings.
@@ -16,7 +21,7 @@ class RegressionPolynomial:
         self.match_rating = match_rating
         self.range = range
         
-    def _transform_match2percentages(self):
+    def _transform_match2percentages(self) -> None:
         """
             Converts the match rating data (home, draw, away) into percentages and stores them
             in self.H_perc, self.D_perc, and self.A_perc arrays.
@@ -25,8 +30,8 @@ class RegressionPolynomial:
         H_perc = []
         D_perc = []
         A_perc = []
-        More_gols_perc = []
-        Less_gols_perc = []
+        more_gols_perc = []
+        less_gols_perc = []
 
         # Calculate percentages for Home (H), Draw (D), and Away (A)
         for key in self.keys:
@@ -40,24 +45,27 @@ class RegressionPolynomial:
                 A_perc.append((values['A'] / total_ftr) * 100)
 
             if total_gols > 0:
-                More_gols_perc.append((values['+gols'] / total_gols) * 100)
-                Less_gols_perc.append((values['-gols'] / total_gols) * 100)
+                more_gols_perc.append((values['+gols'] / total_gols) * 100)
+                less_gols_perc.append((values['-gols'] / total_gols) * 100)
 
             else:
                 H_perc.append(0)
                 D_perc.append(0)
                 A_perc.append(0)
-                More_gols_perc.append(0)
-                Less_gols_perc.append(0)
+                more_gols_perc.append(0)
+                less_gols_perc.append(0)
 
         self.H_perc = np.array(H_perc)
         self.D_perc = np.array(D_perc)
         self.A_perc = np.array(A_perc)
         
-        self.More_gols_perc = np.array(More_gols_perc)
-        self.Less_gols_perc = np.array(Less_gols_perc)
+        self.more_gols_perc = np.array(more_gols_perc)
+        self.less_gols_perc = np.array(less_gols_perc)
         
-    def _remove_outliers(self, X, y):
+    def _remove_outliers(self, X: np.ndarray, y: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        """
+            Removes outliers from the data based on the interquartile range (IQR).
+        """
         q1 = np.percentile(y, 25)
         q3 = np.percentile(y, 75)
         irq = q3 - q1
@@ -72,16 +80,19 @@ class RegressionPolynomial:
         
         return X_without_outliers, y_without_outliers
                 
-    def _find_best_polynomial_fit(self, X, y, max_degree=4, threshold=0.05):
+    def _find_best_polynomial_fit(self, 
+                                  X: np.ndarray, 
+                                  y: np.ndarray, 
+                                  max_degree: int = 4, 
+                                  threshold: float = 0.05) -> Tuple[Optional[LinearRegression], int, float]:
         """
             Finds the best polynomial fit for the given data X and y by testing polynomials 
             up to a specified degree. Returns the best model, the degree, and the R² score.
         """
         best_degree = 1
         best_r2 = -np.inf
-        best_model = None
+        best_model: Optional[LinearRegression] = None
         degrees = range(1, max_degree + 1)
-        r2_values = []
         
         # Loop through different degrees of polynomials
         for degree in degrees:
@@ -92,7 +103,6 @@ class RegressionPolynomial:
             
             # Calculate score
             r2 = r2_score(y, y_pred)
-            r2_values.append(r2)
 
             # Check if current model has the best score
             if r2 > best_r2 + threshold:
@@ -102,7 +112,11 @@ class RegressionPolynomial:
             
         return best_model, best_degree, best_r2 
 
-    def _plot_regression(self, keys, match_percentages, color, label):
+    def _plot_regression(self, 
+                         keys: np.ndarray, 
+                         match_percentages: np.ndarray, 
+                         color: str, 
+                         label: str) -> Tuple[Optional[LinearRegression], int, float]:
         """
             Plots the data points and fits a polynomial regression curve to them.
             Displays the best polynomial fit and its R² score.
@@ -132,7 +146,8 @@ class RegressionPolynomial:
 
         return best_model, best_degree, best_r2
                 
-    def graphs(self, show_graphs):        
+    def graphs(self, show_graphs: bool = False) -> Tuple[Optional[LinearRegression], Optional[LinearRegression], 
+                                                         Optional[LinearRegression], Optional[LinearRegression], Optional[LinearRegression]]:        
         """
             Generates three graphs for Home, Draw, and Away percentages and saves them as a PNG file.
             Optionally displays the graphs if show_graphs is set to True.
@@ -140,16 +155,25 @@ class RegressionPolynomial:
         #Ftr
         plt.subplot(3, 1, 1)
         keys, H_perc = self._remove_outliers(X=self.keys, y=self.H_perc)
-        best_model_H, best_degree_H, best_r2_H = self._plot_regression(keys=keys, match_percentages=H_perc, color='b', label='H')
+        best_model_H, best_degree_H, best_r2_H = self._plot_regression(keys=keys, 
+                                                                       match_percentages=H_perc, 
+                                                                       color='b', 
+                                                                       label='H')
         
         plt.subplot(3, 1, 2)
         keys, D_perc = self._remove_outliers(X=self.keys, y=self.D_perc)
-        best_model_D, best_degree_D, best_r2_D = self._plot_regression(keys=keys, match_percentages=D_perc, color='g', label='D')
+        best_model_D, best_degree_D, best_r2_D = self._plot_regression(keys=keys, 
+                                                                       match_percentages=D_perc, 
+                                                                       color='g', 
+                                                                       label='D')
 
         plt.subplot(3, 1, 3)
         keys, A_perc = self._remove_outliers(X=self.keys, y=self.A_perc)
-        best_model_A, best_degree_A, best_r2_A = self._plot_regression(keys=keys, match_percentages=A_perc, color='r', label='A')
-        
+        best_model_A, best_degree_A, best_r2_A = self._plot_regression(keys=keys, 
+                                                                       match_percentages=A_perc, 
+                                                                       color='r', 
+                                                                       label='A')
+
         # Save the graph 
         root = os.path.dirname(os.path.abspath(__file__))
         parent_path = os.path.dirname(root)
@@ -159,12 +183,18 @@ class RegressionPolynomial:
         
         # Gols
         plt.subplot(2, 1, 1)
-        keys, More_gols = self._remove_outliers(X=self.keys, y=self.More_gols_perc)
-        best_model_Mgols, best_degree_Mgols, best_r2_Mgols = self._plot_regression(keys=keys, match_percentages=More_gols, color='b', label='More Gols')
+        keys, More_gols = self._remove_outliers(X=self.keys, y=self.more_gols_perc)
+        best_model_Mgols, best_degree_Mgols, best_r2_Mgols = self._plot_regression(keys=keys, 
+                                                                                   match_percentages=More_gols, 
+                                                                                   color='b', 
+                                                                                   label='More Gols')
         
         plt.subplot(2, 1, 2)
-        keys, Less_gols = self._remove_outliers(X=self.keys, y=self.Less_gols_perc)
-        best_model_Lgols, best_degree_Lgols, best_r2_Lgols = self._plot_regression(keys=keys, match_percentages=Less_gols, color='g', label='Less Gols')
+        keys, Less_gols = self._remove_outliers(X=self.keys, y=self.less_gols_perc)
+        best_model_Lgols, best_degree_Lgols, best_r2_Lgols = self._plot_regression(keys=keys, 
+                                                                                   match_percentages=Less_gols, 
+                                                                                   color='g', 
+                                                                                   label='Less Gols')
         
         plt.savefig(f'{ parent_path}/Database/{ self.league_name }/Graphs/{ self.stats }_gols.png')
         
@@ -176,7 +206,12 @@ class RegressionPolynomial:
         
         return best_model_H, best_model_D, best_model_A, best_model_Mgols, best_model_Lgols
     
-    def _fix_percentages(self, H, D, A, MG, LG):
+    def _fix_percentages(self, 
+                         H: float, 
+                         D: float, 
+                         A: float, 
+                         MG: float, 
+                         LG: float) -> Tuple[float, float, float, float, float]:
         """
             Helper method to adjust the percentages of H, D, and A to be non-negative and normalized to 100%.
         """
@@ -210,13 +245,13 @@ class RegressionPolynomial:
         return H_perc, D_perc, A_perc, MG_perc, LG_perc
 
     def reajust_match_ratings(self, 
-                              best_model_H, 
-                              best_model_D, 
-                              best_model_A, 
-                              best_model_Mgols, 
-                              best_model_Lgols, 
-                              x_min, 
-                              x_max):
+                              best_model_H: Optional[LinearRegression], 
+                              best_model_D: Optional[LinearRegression], 
+                              best_model_A: Optional[LinearRegression], 
+                              best_model_Mgols: Optional[LinearRegression], 
+                              best_model_Lgols: Optional[LinearRegression], 
+                              x_min: int, 
+                              x_max: int) -> Dict:
         """
             Re-adjusts match ratings (H, D, A percentages) for the given range using the best polynomial
             models obtained. Returns a dictionary of results for each x range values [x_min, x_max].
@@ -256,11 +291,15 @@ class RegressionPolynomial:
             H_perc, D_perc, A_perc, MG_perc, LG_perc = self._fix_percentages(H_pred, D_pred, A_pred, MG_pred, LG_pred)
             
             # Save to results dictionary
-            resultados[x] = {'H': round(H_perc, 2), 'D': round(D_perc, 2), 'A': round(A_perc, 2), '+gols': round(MG_perc, 2), '-gols': round(LG_perc, 2)}
+            resultados[x] = {'H': round(H_perc, 2), 
+                             'D': round(D_perc, 2), 
+                             'A': round(A_perc, 2), 
+                             '+gols': round(MG_perc, 2), 
+                             '-gols': round(LG_perc, 2)}
         
         return resultados
     
-    def fit(self, show_graphs=False):
+    def fit(self, show_graphs: bool = False) -> Dict:
         """
             Main method to execute the full process:
             1. Transform match ratings into percentages.

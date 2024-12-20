@@ -1,8 +1,9 @@
 import numpy as np
 import os
 import json
+from typing import Union, Dict, Any
 
-def normalize_data(data, method=''):
+def normalize_data(data, method: str):
     """
         Normalizes the data based on the chosen method.
         
@@ -77,23 +78,28 @@ def normalize_data(data, method=''):
     return data
 
 def initial_guess_value(league_name: str) -> float:
-    if league_name  ==  'Premier League':
-        return 0.45
-    elif league_name == 'La Liga':
-        return 0.43
-    elif league_name == 'Bundesliga':
-        return 0.63
-    elif league_name == 'Serie A':
-        return 0.60
-    elif league_name == 'Ligue 1':
-        return 0.55
+    league_values = {
+        'Premier League': 0.45,
+        'La Liga': 0.43,
+        'Bundesliga': 0.63,
+        'Serie A': 0.60,
+        'Ligue 1': 0.55
+    }
 
-def load_json_file(file_path):
+    if league_name not in league_values:
+        raise ValueError(
+            f"This league: '{league_name}' is not in the database. "
+            "Please choose between 'Premier League', 'La Liga', 'Bundesliga', 'Serie A', or 'Ligue 1'."
+        )
+
+    return league_values[league_name]
+
+def load_json_file(file_path: str) -> Union[Dict[str, Any], list, None]:
     if os.path.exists(file_path):
         with open(file_path, 'r') as f:
             return json.load(f)
-    return {}
+    return None
 
-def save_json_file(output_path, json_data):
+def save_json_file(output_path: str, json_data: Union[Dict[str, Any], list]) -> None:
     with open(output_path, 'w') as json_file:
         json.dump(json_data, json_file, indent=4)

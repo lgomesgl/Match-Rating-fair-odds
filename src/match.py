@@ -2,15 +2,16 @@ from typing import Dict, Tuple
 import pandas as pd
 
 class MatchRating:
-    def __init__(self, matchs_rating: Dict, estatistic: str, gols: float = 1.5):
+    def __init__(self, matchs_rating: Dict, statistic: str, gols: float = 1.5):
         """
             Initializes the MatchRating class with the provided match ratings, statistic type, and league.
             
             :param matchs_rating: Dictionary to store match ratings.
-            :param estatistic: The statistic to be used ('Gols', 'Shoots', 'Target Shoots').
+            :param statistic: The statistic to be used ('Gols', 'Shoots', 'Target Shoots').
+            :param gols: The threshold for goal classification (default is 1.5).
         """
         self.matchs_rating = matchs_rating
-        self.estatistic = estatistic
+        self.statistic = statistic
         self.gols = gols
         
     def get_columns(self) -> None:
@@ -23,11 +24,11 @@ class MatchRating:
             'Target Shoots': ['HST', 'AST']
         }
         
-        self.columns = columns_map.get(self.estatistic)
-
-        if not self.columns:
-            raise ValueError(f"This statistic its not to be use. Choose between 'Gols', 'Shoots', 'Target Shoots'")
+        if self.statistic not in columns_map:
+            raise ValueError(f"This statistic: {self.statistic} its not to be use. Choose between 'Gols', 'Shoots', 'Target Shoots'")
         
+        self.columns = columns_map[self.statistic]
+
     def _get_gols(self, data_behind: pd.DataFrame, team: str) -> Tuple[int, int]:
             """
                 Calculates goals scored and conceded for a given team in the past matches.
@@ -73,7 +74,6 @@ class MatchRating:
             # Calculate match rating for both teams
             match_team_home = score_home - conceded_home
             match_team_away = score_away - conceded_away
-            
             match_rating = match_team_home - match_team_away
              
             # Get the final result for the match
@@ -87,14 +87,14 @@ class MatchRating:
                 keys_gols = '-gols'
             
             # Update match ratings dictionary
-            if match_rating not in self.matchs_rating[self.estatistic]:
-                self.matchs_rating[self.estatistic][match_rating] = {'H': 0, 'D': 0, 'A': 0, '+gols': 0, '-gols': 0}
+            if match_rating not in self.matchs_rating[self.statistic]:
+                self.matchs_rating[self.statistic][match_rating] = {'H': 0, 'D': 0, 'A': 0, '+gols': 0, '-gols': 0}
                 
             # Update the corresponding outcome (H, D, A)
-            if ftr in self.matchs_rating[self.estatistic][match_rating]:
-                self.matchs_rating[self.estatistic][match_rating][ftr] += 1
+            if ftr in self.matchs_rating[self.statistic][match_rating]:
+                self.matchs_rating[self.statistic][match_rating][ftr] += 1
                 
             # Update the corresponding outcome ('+gols', '-gols')
-            if keys_gols in self.matchs_rating[self.estatistic][match_rating]:
-                self.matchs_rating[self.estatistic][match_rating][keys_gols] += 1
+            if keys_gols in self.matchs_rating[self.statistic][match_rating]:
+                self.matchs_rating[self.statistic][match_rating][keys_gols] += 1
                 
