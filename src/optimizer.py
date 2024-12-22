@@ -11,7 +11,12 @@ class OptimizerAdam:
         epsilon (float): Small constant to prevent division by zero.
     """
 
-    def __init__(self, learning_rate=0.001, beta1=0.9, beta2=0.999, epsilon=1e-8):
+    def __init__(self, 
+                 learning_rate: float = 0.001, 
+                 beta1: float = 0.9, 
+                 beta2: float = 0.999, 
+                 epsilon: float = 1e-8):
+
         self.learning_rate = learning_rate
         self.beta1 = beta1
         self.beta2 = beta2
@@ -20,7 +25,7 @@ class OptimizerAdam:
         self.v = None
         self.t = 0
         
-    def update(self, w, grad):
+    def update(self, w: float, grad: np.ndarray) -> float:
         """
             Update weights using Adam optimization.
 

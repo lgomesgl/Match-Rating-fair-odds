@@ -198,5 +198,7 @@ class OneModel:
                                    prob_ts=self.prob_ts, 
                                    ftr=self.ftr, 
                                    optimizer=optimizer)
+            
+            assert 0.0 <= w1 <= 1.0
             # print(w1)
         return w1
