@@ -81,5 +81,5 @@ def main(league_name, match_rating_path):
     
 if __name__ == '__main__':
     for league in ['Premier League', 'La Liga', 'Bundesliga', 'Serie A', 'Ligue 1']:
-        main(league_name=league, match_rating_path=f'C:/home/projects/footballApp/database/static/matchs_ratings.json')
+        main(league_name=league, match_rating_path=f'{ parent_path }/database/matchs_ratings.json')
          
