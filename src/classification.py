@@ -47,6 +47,9 @@ class LeagueTable:
                 - 'weight': Weight based on team position in the league.
         """
 
+        if data.empty:
+            raise ValueError(f"The data passed to { LeagueTable.__name__ } is empty")
+        
         required_columns = {'HomeTeam', 'AwayTeam', 'FTHG', 'FTAG', 'FTR'}
         if not required_columns.issubset(data.columns):
             raise ValueError(f"Data is missing required columns: {required_columns - set(data.columns)}")
@@ -92,12 +95,12 @@ class LeagueTable:
                 self.table[away_team]['goals score'] += away_goals
                 self.table[away_team]['goals conceded'] += home_goals
 
-        data = pd.DataFrame(self.table).T
-        data['goals diff'] = data['goals score'] - data['goals conceded']
+        df = pd.DataFrame(self.table).T
+        df['goals diff'] = df['goals score'] - df['goals conceded']
 
-        sorted_data = data.sort_values(by=['points', 'goals diff'], ascending=[False, False]).reset_index(drop=False)
+        sorted_df = df.sort_values(by=['points', 'goals diff'], ascending=[False, False]).reset_index(drop=False)
 
-        return sorted_data
+        return sorted_df
     
     def create_weights(
         self, 

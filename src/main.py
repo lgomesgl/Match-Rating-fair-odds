@@ -26,13 +26,15 @@ def main(league_name, match_rating_path):
         'Target Shoots':{}
     }
 
+    logging.info(f'Creating match rating data...')
     for data in datas_train:
         df = pd.read_csv(os.path.join(file_train, data))
         for stats in ['Gols', 'Shoots', 'Target Shoots']:
             match_rat = MatchRating(matchs_rating=matchs_rating, statistic=stats, gols=1.5)
             match_rat.get_columns()
-            match_rat.get_match_rating(data=df) 
+            match_rat.get_match_rating(data=df, classification=True) 
     
+    logging.info(f'Fit data by Regression Polynomial')
     rp_gols = RegressionPolynomial(league_name=league_name,
                                         stats='Gols',
                                         match_rating=dict(sorted(matchs_rating['Gols'].items())),
@@ -65,6 +67,7 @@ def main(league_name, match_rating_path):
     file_test = f'{parent_path}/database/{ league_name }/test'
     datas_test = os.listdir(file_test)
     
+    logging.info(f'Optimizer the models')
     optimizer = OptimizerAdam(learning_rate=0.001)
     # optimizer = OptimizerAdaDelta()
     
@@ -77,6 +80,7 @@ def main(league_name, match_rating_path):
     
     all_results[league_name]['w1'] = w1
     
+    logging.infoo(f'Save the match rating')
     save_json_file(match_rating_path, all_results)
     
 if __name__ == '__main__':

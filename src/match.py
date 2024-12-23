@@ -1,5 +1,6 @@
-from typing import Dict, Tuple
 import pandas as pd
+from typing import Dict, Tuple
+from classification import LeagueTable
 
 class MatchRating:
     def __init__(self, matchs_rating: Dict, statistic: str, gols: float = 1.5):
@@ -29,7 +30,7 @@ class MatchRating:
         
         self.columns = columns_map[self.statistic]
 
-    def _get_gols(self, data_behind: pd.DataFrame, team: str) -> Tuple[int, int]:
+    def _get_gols(self, data_behind_n_matchs: pd.DataFrame, team: str) -> Tuple[int, int]:
             """
                 Calculates goals scored and conceded for a given team in the past matches.
                 
@@ -40,18 +41,72 @@ class MatchRating:
             conceded = 0            
             
             # Goals for home matches
-            data_home = data_behind[(data_behind['HomeTeam'] == team)]                
+            data_home = data_behind_n_matchs[(data_behind_n_matchs['HomeTeam'] == team)]        
             score += int(data_home[self.columns[0]].sum())
             conceded += int(data_home[self.columns[1]].sum())
             
             # Goals for away matches
-            data_away = data_behind[(data_behind['AwayTeam'] == team)]
+            data_away = data_behind_n_matchs[(data_behind_n_matchs['AwayTeam'] == team)]
             score += int(data_away[self.columns[1]].sum())
             conceded += int(data_away[self.columns[0]].sum())
             
             return score, conceded
+    
+    def _get_gols_with_classification(self, data: pd.DataFrame, data_behind_n_matchs: pd.DataFrame, team: str) -> Tuple[int, int]:
+        score = 0 
+        conceded = 0
 
-    def get_match_rating(self, data: pd.DataFrame, n_matchs_behind:int = 5) -> None:
+        data_home = data_behind_n_matchs[(data_behind_n_matchs['HomeTeam'] == team)]   
+        data_away = data_behind_n_matchs[(data_behind_n_matchs['AwayTeam'] == team)]
+
+        for i, row in data_home.iterrows():
+            df = data.iloc[:i, :]
+            away_team = row['AwayTeam']
+
+            if i == 0:
+                score += int(row['FTHG'])
+                conceded += int(row['FTAG'])
+                continue
+
+            table = LeagueTable()
+            sorted_table = table.create_table(data=df)            
+            weights = table.create_weights(data=sorted_table, weights=[1.2, 1.0, 0.8])
+            weight_data = weights[weights['index'] == away_team]
+
+            if weight_data.empty:
+                score += int(row['FTHG'])
+                conceded += int(row['FTAG'])
+                continue
+
+            score += int(row['FTHG']) * float(weight_data['weight score'].iloc[0])
+            conceded += int(row['FTAG']) * float(weight_data['weight conceded'].iloc[0])
+          
+        for i, row in data_away.iterrows():
+            df = data.iloc[:i, :]
+            home_team = row['HomeTeam']
+
+            if i == 0:
+                score += int(row['FTHG'])
+                conceded += int(row['FTAG'])
+                continue
+
+            table = LeagueTable()
+            sorted_table = table.create_table(data=df)            
+            weights = table.create_weights(data=sorted_table, weights=[1.2, 1.0, 0.8])
+            weight_data = weights[weights['index'] == home_team]
+          
+            if weight_data.empty:
+                score += int(row['FTAG'])
+                conceded += int(row['FTHG'])
+                continue
+
+            score += int(row['FTAG']) * float(weight_data['weight score'].iloc[0])
+            conceded += int(row['FTHG']) * float(weight_data['weight conceded'].iloc[0])
+
+        return score, conceded
+
+
+    def get_match_rating(self, data: pd.DataFrame, n_matchs_behind:int = 5, classification: bool = False) -> None:
         """
             Calculates the match ratings based on the number of matches behind and updates the match ratings dictionary.
             
@@ -60,17 +115,26 @@ class MatchRating:
         """
         # Iterate through matches, starting after the number of matches behind
         for i in range(n_matchs_behind*10+1, data.shape[0]):
-            data_behind = data.iloc[i-n_matchs_behind*10-1:i, :]
+            data_behind_n_matchs = data.iloc[i-n_matchs_behind*10-1:i, :]
 
             # Get home and away team from the current match row
             row = data.loc[i]
             home_team = row['HomeTeam']
             away_team = row['AwayTeam']
 
-            # Calculate goals for home and away teams
-            score_home, conceded_home = self._get_gols(data_behind=data_behind, team=home_team)
-            score_away, conceded_away = self._get_gols(data_behind=data_behind, team=away_team)
-            
+            if not classification:
+                # Calculate goals for home and away teams
+                score_home, conceded_home = self._get_gols(data_behind_n_matchs=data_behind_n_matchs, team=home_team)
+                score_away, conceded_away = self._get_gols(data_behind_n_matchs=data_behind_n_matchs, team=away_team)
+            else:
+                # Calculate goals for home and away teams
+                score_home, conceded_home = self._get_gols_with_classification(data=data, 
+                                                                               data_behind_n_matchs=data_behind_n_matchs, 
+                                                                               team=home_team)
+                score_away, conceded_away = self._get_gols_with_classification(data=data, 
+                                                                               data_behind_n_matchs=data_behind_n_matchs, 
+                                                                               team=away_team)
+
             # Calculate match rating for both teams
             match_team_home = score_home - conceded_home
             match_team_away = score_away - conceded_away
