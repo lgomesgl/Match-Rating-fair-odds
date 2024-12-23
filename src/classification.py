@@ -8,7 +8,7 @@ class TeamStats(TypedDict):
     goals_diff: int
 
 class LeagueTable:
-    def __init__(self, league_name: str) -> None:
+    def __init__(self) -> None:
         """
         Class to represent and calculate a league table based on match results.
         
@@ -21,10 +21,8 @@ class LeagueTable:
         - Total goals difference (goals score - goals conceded) - European leagues.
 
         Attributes:
-        - league_name (str): Name of the league being analyzed.
         - table (dict): Dictionary where keys are team names and values are their stats.
         """
-        self.league_name = league_name
         self.table: Dict[str, TeamStats] = {}
 
     def create_table(self, data: pd.DataFrame) -> pd.DataFrame:
@@ -129,15 +127,25 @@ class LeagueTable:
 
         n = data.shape[0]
         section_size = n // num_sections
-        weight_values = []
+        weight_score = []
 
+        # Assign weights to 'weight score'
         for i in range(n):
             for section in range(num_sections):
                 if i < (section + 1) * section_size or section == num_sections - 1:
-                    weight_values.append(weights[section])
+                    weight_score.append(weights[section])
                     break
 
-        data['weight'] = weight_values
+        # Create the inverse weights for 'weight conceded'
+        weight_conceded = []
+        for i in range(n):
+            for section in range(num_sections):
+                if i < (section + 1) * section_size or section == num_sections - 1:
+                    weight_conceded.append(weights[num_sections - section - 1])  # Reverse section weights
+                    break
+
+        data['weight score'] = weight_score
+        data['weight conceded'] = weight_conceded
 
         return data
 
