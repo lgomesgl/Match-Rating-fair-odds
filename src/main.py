@@ -13,7 +13,7 @@ root = os.path.dirname(os.path.abspath(__file__))
 parent_path = os.path.dirname(root)
 
 def main(league_name, match_rating_path):
-    logging.info(f'Start into { league_name }')    
+    logging.info(f'########## { league_name } ##########')    
     all_results = load_json_file(match_rating_path)
 
     logging.info(f'Start into train data')
@@ -27,12 +27,15 @@ def main(league_name, match_rating_path):
     }
 
     logging.info(f'Creating match rating data...')
+    count = 0
     for data in datas_train:
         df = pd.read_csv(os.path.join(file_train, data))
         for stats in ['Gols', 'Shoots', 'Target Shoots']:
             match_rat = MatchRating(matchs_rating=matchs_rating, statistic=stats, gols=1.5)
             match_rat.get_columns()
-            match_rat.get_match_rating(data=df, classification=True) 
+            match_rat.get_match_rating(data=df, classification=False) 
+        count += 1
+        logging.info(f'Datasets training: { count }/8')
     
     logging.info(f'Fit data by Regression Polynomial')
     rp_gols = RegressionPolynomial(league_name=league_name,
@@ -80,10 +83,10 @@ def main(league_name, match_rating_path):
     
     all_results[league_name]['w1'] = w1
     
-    logging.infoo(f'Save the match rating')
+    logging.info(f'Save the match rating')
     save_json_file(match_rating_path, all_results)
     
 if __name__ == '__main__':
     for league in ['Premier League', 'La Liga', 'Bundesliga', 'Serie A', 'Ligue 1']:
-        main(league_name=league, match_rating_path=f'{ parent_path }/database/matchs_ratings.json')
+        main(league_name=league, match_rating_path=f'{ parent_path }/database/json/matchs_ratings.json')
          

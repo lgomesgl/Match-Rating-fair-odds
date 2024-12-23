@@ -8,7 +8,7 @@ class TeamStats(TypedDict):
     goals_diff: int
 
 class LeagueTable:
-    def __init__(self) -> None:
+    def __init__(self, data_league) -> None:
         """
         Class to represent and calculate a league table based on match results.
         
@@ -23,9 +23,11 @@ class LeagueTable:
         Attributes:
         - table (dict): Dictionary where keys are team names and values are their stats.
         """
+        self.data_league = data_league
         self.table: Dict[str, TeamStats] = {}
+        self.by_row: Dict[int, pd.DataFrame] = {}
 
-    def create_table(self, data: pd.DataFrame) -> pd.DataFrame:
+    def _create_table(self, data: pd.DataFrame) -> pd.DataFrame:
         """
         Constructs the league table from match data.
 
@@ -54,7 +56,7 @@ class LeagueTable:
         if not required_columns.issubset(data.columns):
             raise ValueError(f"Data is missing required columns: {required_columns - set(data.columns)}")
         
-        for _, row in data.iterrows():
+        for i, row in data.iterrows():
             home_team = row['HomeTeam']
             away_team = row['AwayTeam']
             home_goals = row['FTHG']
@@ -95,6 +97,9 @@ class LeagueTable:
                 self.table[away_team]['goals score'] += away_goals
                 self.table[away_team]['goals conceded'] += home_goals
 
+            dict_by_row = {team: stats.copy() for team, stats in self.table.items()}
+            self._create_table_by_row(i=i, dict_by_row=dict_by_row)
+
         df = pd.DataFrame(self.table).T
         df['goals diff'] = df['goals score'] - df['goals conceded']
 
@@ -102,7 +107,17 @@ class LeagueTable:
 
         return sorted_df
     
-    def create_weights(
+    def _create_table_by_row(self, i: int, dict_by_row: Dict[str, TeamStats]) -> dict[int, pd.DataFrame]:  
+        df = pd.DataFrame(dict_by_row).T
+        df['goals diff'] = df['goals score'] - df['goals conceded']
+        sorted_df = df.sort_values(by=['points', 'goals diff'], ascending=[False, False]).reset_index(drop=False)
+
+        weight_df = self._create_weights(data=sorted_df, weights=[1.2, 1.0, 0.8])
+        self.by_row[i] = weight_df
+
+        return self.by_row
+    
+    def _create_weights(
         self, 
         data: pd.DataFrame, 
         weights: Optional[List[float]] = None, 
@@ -144,11 +159,19 @@ class LeagueTable:
         for i in range(n):
             for section in range(num_sections):
                 if i < (section + 1) * section_size or section == num_sections - 1:
-                    weight_conceded.append(weights[num_sections - section - 1])  # Reverse section weights
+                    weight_conceded.append(weights[num_sections - section - 1]) 
                     break
 
         data['weight score'] = weight_score
         data['weight conceded'] = weight_conceded
 
         return data
+    
+    def save_json_tables(self):
+        pass
+
+    def fit(self) -> Dict[int, Optional[pd.DataFrame]]:
+        self._create_table(data=self.data_league)
+        return self.by_row
+
 
