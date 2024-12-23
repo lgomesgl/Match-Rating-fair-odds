@@ -1,5 +1,10 @@
-from typing import Dict, TypedDict, List, Optional
+from typing import Dict, TypedDict, List, Optional, Any
+from tools import save_json_file
 import pandas as pd
+import os
+
+root = os.path.dirname(os.path.abspath(__file__))
+parent_path = os.path.dirname(root)
 
 class TeamStats(TypedDict):
     points: int
@@ -167,11 +172,42 @@ class LeagueTable:
 
         return data
     
-    def save_json_tables(self):
-        pass
+    def save_json_tables(self, 
+                         league_name: str, 
+                         data_path: str, 
+                         all_leagues_data: Dict[str, Dict[str, Any]]):
+        """Saves the league data in a JSON file, separated by league and processed file."""
+        league_table = {}
+
+        serialized_by_row = {key: value.to_dict(orient="records") if value is not None else None
+                             for key, value in self.by_row.items()}
+
+        league_table[os.path.basename(data_path)] = serialized_by_row  
+
+        if league_name not in all_leagues_data:
+            all_leagues_data[league_name] = {}
+
+        all_leagues_data[league_name].update(league_table)
 
     def fit(self) -> Dict[int, Optional[pd.DataFrame]]:
         self._create_table(data=self.data_league)
         return self.by_row
 
+if __name__ == "__main__":
+    if not 'league_classifications.json' in os.listdir(f'{ parent_path }/database/json'):
 
+        all_leagues_data = {}
+        for league in ['Premier League', 'La Liga', 'Bundesliga', 'Serie A', 'Ligue 1']:
+            datas = os.listdir(fr'{parent_path}/database/{league}/train')
+            
+            for data in datas:
+                data_path = fr'{parent_path}/database/{league}/train/{data}'  
+                data_df = pd.read_csv(data_path) 
+                
+                lt = LeagueTable(data_league=data_df) 
+                lt.fit() 
+                
+                lt.save_json_tables(league, data_path, all_leagues_data)  
+
+        output_json_path = fr'{parent_path}/database/json/league_classifications.json'
+        save_json_file(output_json_path, all_leagues_data)

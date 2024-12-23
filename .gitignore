@@ -4,3 +4,6 @@ venv/
 # Ignore pycache
 __pycache__/
 *.pyc
+
+# json files
+database/json/*

@@ -244,7 +244,7 @@ class RegressionPolynomial:
         
         return H_perc, D_perc, A_perc, MG_perc, LG_perc
 
-    def reajust_match_ratings(self, 
+    def _reajust_match_ratings(self, 
                               best_model_H: Optional[LinearRegression], 
                               best_model_D: Optional[LinearRegression], 
                               best_model_A: Optional[LinearRegression], 
@@ -308,4 +308,4 @@ class RegressionPolynomial:
         """
         self._transform_match2percentages()  # Convert match ratings to percentages
         best_model_H, best_model_D, best_model_A, best_model_Mgols, best_model_Lgols = self.graphs(show_graphs)  # Generate graphs and return best models
-        return self.reajust_match_ratings(best_model_H, best_model_D, best_model_A, best_model_Mgols, best_model_Lgols, self.range[0], self.range[1])  # Re-adjust ratings
+        return self._reajust_match_ratings(best_model_H, best_model_D, best_model_A, best_model_Mgols, best_model_Lgols, self.range[0], self.range[1])  # Re-adjust ratings
