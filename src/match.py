@@ -72,15 +72,15 @@ class MatchRating:
         score = 0
         conceded = 0
 
-        # Filtrar jogos em casa e fora
         data_home = data_behind_n_matchs[data_behind_n_matchs['HomeTeam'] == team]
         data_away = data_behind_n_matchs[data_behind_n_matchs['AwayTeam'] == team]
 
-        # Calcular a tabela de classificação
         table = LeagueTable(data_league=data).fit()
 
-        # Função auxiliar para calcular os valores
-        def calculate_gols(rows, opponent_column, is_home: bool):
+        def calculate_gols(rows: pd.DataFrame, 
+                           opponent_column: str, 
+                           is_home: bool) -> None:
+            
             nonlocal score, conceded
             weights_score_col = "weight score"
             weights_conceded_col = "weight conceded"
