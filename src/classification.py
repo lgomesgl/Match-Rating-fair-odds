@@ -112,7 +112,21 @@ class LeagueTable:
 
         return sorted_df
     
-    def _create_table_by_row(self, i: int, dict_by_row: Dict[str, TeamStats]) -> dict[int, pd.DataFrame]:  
+    def _create_table_by_row(self, i: int, dict_by_row: Dict[str, TeamStats]) -> dict[int, pd.DataFrame]:
+        """
+        Create a league table for a specific row, calculate goal differences, 
+        and assign weights to teams based on their performance.
+
+        Args:
+        - i (int): The index representing the current row in the league data.
+        - dict_by_row (Dict[str, TeamStats]): Dictionary containing team statistics, 
+        where keys are team names and values are instances of `TeamStats`.
+
+        Returns:
+        - dict[int, pd.DataFrame]: Updated dictionary with the league table 
+        and weights for the given row index.
+
+        """  
         df = pd.DataFrame(dict_by_row).T
         df['goals diff'] = df['goals score'] - df['goals conceded']
         sorted_df = df.sort_values(by=['points', 'goals diff'], ascending=[False, False]).reset_index(drop=False)

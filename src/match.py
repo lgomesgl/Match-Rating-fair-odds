@@ -1,9 +1,18 @@
 import pandas as pd
-from typing import Dict, Tuple
+import os
+from typing import Dict, Tuple, List, Optional
 from classification import LeagueTable
+from tools import load_json_file
+
+root = os.path.dirname(os.path.abspath(__file__))
+parent_path = os.path.dirname(root)
 
 class MatchRating:
-    def __init__(self, matchs_rating: Dict, statistic: str, gols: float = 1.5):
+    def __init__(self, 
+                 league_name: str,
+                 matchs_rating: Dict, 
+                 statistic: str, 
+                 gols: float = 1.5):
         """
             Initializes the MatchRating class with the provided match ratings, statistic type, and league.
             
@@ -11,6 +20,7 @@ class MatchRating:
             :param statistic: The statistic to be used ('Gols', 'Shoots', 'Target Shoots').
             :param gols: The threshold for goal classification (default is 1.5).
         """
+        self.league_name = league_name
         self.matchs_rating = matchs_rating
         self.statistic = statistic
         self.gols = gols
@@ -52,16 +62,88 @@ class MatchRating:
         
         return score, conceded
     
+    def __get_table_classification(self, file_name: str) -> List[Dict[str, str | float | int]]:
+        """
+        Retrieve the league classification table from a JSON file.
+
+        Args:
+            file_name (str): The name of the file containing the league classification data.
+
+        Returns:
+            List[Dict[str, str | float | int]]: A list of dictionaries representing the league table data.
+        """
+        data = load_json_file(f'{ parent_path }/database/json/league_classifications.json')
+        table = data[self.league_name][file_name]
+        return table
+    
+    def __calculate_gols_classification(self,
+                       score: float,
+                       conceded: float,
+                       table: Dict[int, Optional[pd.DataFrame]] | List[Dict[str, str | float | int]],
+                       rows: pd.DataFrame, 
+                       opponent_column: str, 
+                       is_home: bool) -> Tuple[float, float]:
+        """
+        Calculate the weighted goals scored and conceded by a team based on its opponents' positions in the league table.
+
+        Args:
+            score (float): Initial score value (usually 0).
+            conceded (float): Initial conceded value (usually 0).
+            table (Dict[int, Optional[pd.DataFrame]] | List[Dict[str, str | float | int]]): 
+            The league table or weights for classification.
+            rows (pd.DataFrame): Match data rows for the team.
+            opponent_column (str): Column name for the opposing team's identifier.
+            is_home (bool): Indicates if the team is playing at home.
+
+        Returns:
+            Tuple[float, float]: Updated weighted goals scored and conceded.
+        """
+        weights_score_col = "weight score"
+        weights_conceded_col = "weight conceded"
+
+        for i, row in rows.iterrows():
+            opponent_team = row[opponent_column]
+            gols_scored = row['FTHG'] if is_home else row['FTAG']
+            gols_conceded = row['FTAG'] if is_home else row['FTHG']
+
+            if i == 0: 
+                score += int(gols_scored)
+                conceded += int(gols_conceded)                    
+                continue
+
+            table_at_row = table.get(i - 1)
+            if table_at_row is None:  
+                score += int(gols_scored)
+                conceded += int(gols_conceded)            
+                continue
+            
+            team_at_table = table_at_row[table_at_row['index'] == opponent_team]
+
+            if team_at_table.empty:
+                score += int(gols_scored)
+                conceded += int(gols_conceded)   
+                continue
+
+            weight_score = float(team_at_table[weights_score_col].iloc[0])
+            weight_conceded = float(team_at_table[weights_conceded_col].iloc[0])
+
+            score += int(gols_scored) * weight_score
+            conceded += int(gols_conceded) * weight_conceded
+
+        return score, conceded
+
     def _get_gols_with_classification(
-        self, 
+        self,
+        file_name: str, 
         data: pd.DataFrame, 
         data_behind_n_matchs: pd.DataFrame, 
         team: str) -> Tuple[int, int]:
         """
-        Calculates the goals scored and conceded by a team, weighted by the 
-        opponents' weights in the league table.
+        Calculate the total weighted goals scored and conceded by a team based on 
+        the opponents' weights in the league table.
 
         Args:
+            file_name (str): Name of the file containing league classification data.
             data (pd.DataFrame): Complete league data.
             data_behind_n_matchs (pd.DataFrame): Filtered data for the last N matches.
             team (str): Team name.
@@ -76,48 +158,28 @@ class MatchRating:
         data_away = data_behind_n_matchs[data_behind_n_matchs['AwayTeam'] == team]
 
         table = LeagueTable(data_league=data).fit()
-
-        def calculate_gols(rows: pd.DataFrame, 
-                           opponent_column: str, 
-                           is_home: bool) -> None:
-            
-            nonlocal score, conceded
-            weights_score_col = "weight score"
-            weights_conceded_col = "weight conceded"
-
-            for i, row in rows.iterrows():
-                opponent_team = row[opponent_column]
-                gols_scored = row['FTHG'] if is_home else row['FTAG']
-                gols_conceded = row['FTAG'] if is_home else row['FTHG']
-
-                if i == 0: 
-                    score += int(gols_scored)
-                    conceded += int(gols_conceded)                    
-                    continue
-
-                table_at_row = table.get(i - 1)
-                if table_at_row is None:  
-                    score += int(gols_scored)
-                    conceded += int(gols_conceded)            
-                    continue
-
-                team_at_table = table_at_row[table_at_row['index'] == opponent_team]
-                if team_at_table.empty:
-                    score += int(gols_scored)
-                    conceded += int(gols_conceded)   
-                    continue
-
-                weight_score = float(team_at_table[weights_score_col].iloc[0])
-                weight_conceded = float(team_at_table[weights_conceded_col].iloc[0])
-                score += int(gols_scored) * weight_score
-                conceded += int(gols_conceded) * weight_conceded
-
-        calculate_gols(data_home, 'AwayTeam', is_home=True)
-        calculate_gols(data_away, 'HomeTeam', is_home=False)
-
+        #table = self.__get_table_classification(file_name=file_name)
+        
+        score, conceded = self.__calculate_gols_classification(score=score, 
+                                                               conceded=conceded, 
+                                                               table=table, 
+                                                               rows=data_home, 
+                                                               opponent_column='AwayTeam', 
+                                                               is_home=True)
+        score, conceded = self.__calculate_gols_classification(score=score, 
+                                                               conceded=conceded, 
+                                                               table=table, 
+                                                               rows=data_away, 
+                                                               opponent_column='HomeTeam', 
+                                                               is_home=False)
+        
         return score, conceded
 
-    def get_match_rating(self, data: pd.DataFrame, n_matchs_behind:int = 5, classification: bool = False) -> None:
+    def get_match_rating(self, 
+                         file_name: str,
+                         data: pd.DataFrame, 
+                         n_matchs_behind:int = 5, 
+                         classification: bool = False) -> None:
         """
             Calculates the match ratings based on the number of matches behind and updates the match ratings dictionary.
             
@@ -138,11 +200,13 @@ class MatchRating:
                 score_home, conceded_home = self._get_gols(data_behind_n_matchs=data_behind_n_matchs, team=home_team)
                 score_away, conceded_away = self._get_gols(data_behind_n_matchs=data_behind_n_matchs, team=away_team)
             else:
-                # Calculate goals for home and away teams
-                score_home, conceded_home = self._get_gols_with_classification(data=data, 
+                # Calculate goals for home and away teams using weights of classification
+                score_home, conceded_home = self._get_gols_with_classification(data=data,
+                                                                               file_name=file_name, 
                                                                                data_behind_n_matchs=data_behind_n_matchs, 
                                                                                team=home_team)
                 score_away, conceded_away = self._get_gols_with_classification(data=data, 
+                                                                               file_name=file_name, 
                                                                                data_behind_n_matchs=data_behind_n_matchs, 
                                                                                team=away_team)
 

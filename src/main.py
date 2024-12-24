@@ -31,9 +31,9 @@ def main(league_name, match_rating_path):
     for data in datas_train:
         df = pd.read_csv(os.path.join(file_train, data))
         for stats in ['Gols', 'Shoots', 'Target Shoots']:
-            match_rat = MatchRating(matchs_rating=matchs_rating, statistic=stats, gols=1.5)
+            match_rat = MatchRating(league_name=league_name, matchs_rating=matchs_rating, statistic=stats, gols=1.5)
             match_rat.get_columns()
-            match_rat.get_match_rating(data=df, classification=False) 
+            match_rat.get_match_rating(data=df, file_name=data, classification=True) 
         count += 1
         logging.info(f'Datasets training: { count }/8')
     
