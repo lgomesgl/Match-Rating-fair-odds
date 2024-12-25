@@ -2,7 +2,7 @@ import pandas as pd
 import os
 from typing import Dict, Tuple, List, Optional
 from weights.classification_table import LeagueTable
-from match_rating.tools import load_json_file
+from utils.tools import load_json_file
 
 root = os.path.dirname(os.path.abspath(__file__))
 parent_path = os.path.dirname(os.path.dirname(root))

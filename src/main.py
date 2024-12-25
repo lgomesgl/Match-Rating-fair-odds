@@ -3,7 +3,7 @@ import pandas as pd
 import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-from match_rating.tools import initial_guess_value, normalize_data, load_json_file, save_json_file
+from utils.tools import initial_guess_value, normalize_data, load_json_file, save_json_file
 from match_rating.match import MatchRating
 from match_rating.regression_polynomial import RegressionPolynomial
 from match_rating.combined_matchs import OneModel
