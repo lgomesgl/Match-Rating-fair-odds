@@ -214,7 +214,7 @@ class RegressionPolynomial:
 
         # Save the graph 
         root = os.path.dirname(os.path.abspath(__file__))
-        parent_path = os.path.dirname(root)
+        parent_path = os.path.dirname(os.path.dirname(root))
         plt.savefig(fr'{parent_path}/database/leagues/{ self.league_name }/Graphs/{ self.stats }_ftr.png')
         
         plt.close()
@@ -368,9 +368,10 @@ class RegressionPolynomial:
     def fit(self, show_graphs: bool = False) -> Dict:
         """
             Main method to execute the full process:
-            1. Transform match ratings into percentages.
-            2. Generate graphs and save them.
-            3. Re-adjust match ratings using the best polynomial models.
+            1. Transform match ratings into percentages;
+            2. Find the best polynomial;
+            3. Generate graphs and save them;
+            4. Adjust match predictions.
         """
         self._transform_match2percentages()  
         best_model_H, best_model_D, best_model_A, best_model_Mgols, best_model_Lgols = self.graphs(show_graphs) 

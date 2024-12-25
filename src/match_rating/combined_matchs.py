@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from typing import Dict, Optional, List, Tuple
-from optimizer import OptimizerAdam
+from optimizers.optimizer import OptimizerAdam, OptimizerAdaDelta
 
 class OneModel:
     """
@@ -97,7 +97,7 @@ class OneModel:
         """
         return np.sum((np.array(prob_match) - np.array(prob_real)) * (np.array(prob_gols) - np.array(prob_ts)))
 
-    def calculate_w1(self, 
+    def _calculate_w1(self, 
                      w1: float, 
                      prob_gols: List[float], 
                      prob_ts: List[float], 
@@ -138,25 +138,25 @@ class OneModel:
             team (str): Team name.
 
         Returns:
-            Tuple[int, int]: Goals scored (feitos) and conceded (concedidos).
+            Tuple[int, int]: Goals scored (score) and conceded (conceded).
         """
-        feitos: int = 0
-        concedidos: int = 0
+        score: int = 0
+        conceded: int = 0
 
         data_home = data_behind[data_behind['HomeTeam'] == team]
-        feitos += int(data_home[self.columns[0]].sum())
-        concedidos += int(data_home[self.columns[1]].sum())
+        score += int(data_home[self.columns[0]].sum())
+        conceded += int(data_home[self.columns[1]].sum())
 
         data_away = data_behind[data_behind['AwayTeam'] == team]
-        feitos += int(data_away[self.columns[1]].sum())
-        concedidos += int(data_away[self.columns[0]].sum())
+        score += int(data_away[self.columns[1]].sum())
+        conceded += int(data_away[self.columns[0]].sum())
 
-        return feitos, concedidos
+        return score, conceded
     
-    def get_match_rating(self, 
-                         w1: float, 
-                         optimizer, 
-                         n_matchs_behind: int = 5) -> float:
+    def update_w1(self, 
+                  w1: float, 
+                  optimizer: OptimizerAdam | OptimizerAdaDelta, 
+                  n_matchs_behind: int = 5) -> float:
         """
         Get the match rating based on past performance and update w1.
 
@@ -178,12 +178,11 @@ class OneModel:
                 home_team = row['HomeTeam']
                 away_team = row['AwayTeam']
 
-                feitos_home, concedidos_home = self._get_gols(team=home_team, data_behind=data_behind)
-                feitos_away, concedidos_away = self._get_gols(team=away_team, data_behind=data_behind)
+                score_home, conceded_home = self._get_gols(team=home_team, data_behind=data_behind)
+                score_away, conceded_away = self._get_gols(team=away_team, data_behind=data_behind)
 
-                match_team_home = feitos_home - concedidos_home
-                match_team_away = feitos_away - concedidos_away
-
+                match_team_home = score_home - conceded_home
+                match_team_away = score_away - conceded_away
                 match_rating = match_team_home - match_team_away
 
                 self.ftr = row['FTR']
@@ -193,7 +192,7 @@ class OneModel:
                 elif stats == 'Target Shoots':
                     self.prob_ts = list(self.models_ratings[stats][match_rating].values())[:3]
 
-            w1 = self.calculate_w1(w1=w1, 
+            w1 = self._calculate_w1(w1=w1, 
                                    prob_gols=self.prob_gols, 
                                    prob_ts=self.prob_ts, 
                                    ftr=self.ftr, 

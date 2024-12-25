@@ -3,11 +3,11 @@ import pandas as pd
 import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-from tools import initial_guess_value, normalize_data, load_json_file, save_json_file
-from match import MatchRating
-from regression_polynomial import RegressionPolynomial
-from combined_matchs import OneModel
-from optimizer import OptimizerAdam, OptimizerAdaDelta
+from match_rating.tools import initial_guess_value, normalize_data, load_json_file, save_json_file
+from match_rating.match import MatchRating
+from match_rating.regression_polynomial import RegressionPolynomial
+from match_rating.combined_matchs import OneModel
+from optimizers.optimizer import OptimizerAdam, OptimizerAdaDelta
 
 root = os.path.dirname(os.path.abspath(__file__))
 parent_path = os.path.dirname(root)
@@ -79,7 +79,7 @@ def main(league_name, match_rating_path):
         df = pd.read_csv(os.path.join(file_test, data))
         
         onemodel = OneModel(data=df, models_ratings=all_results[league_name])
-        w1 = onemodel.get_match_rating(w1=w1, optimizer=optimizer)
+        w1 = onemodel.update_w1(w1=w1, optimizer=optimizer)
     
     all_results[league_name]['w1'] = w1
     
