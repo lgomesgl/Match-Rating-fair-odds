@@ -16,9 +16,11 @@ class MatchRating:
         """
             Initializes the MatchRating class with the provided match ratings, statistic type, and league.
             
-            :param matchs_rating: Dictionary to store match ratings.
-            :param statistic: The statistic to be used ('Gols', 'Shoots', 'Target Shoots').
-            :param gols: The threshold for goal classification (default is 1.5).
+            Args:
+                league_name (str): The name of the league
+                matchs_rating (Dict): Dictionary to store match ratings.
+                statistic (str): The statistic to be used ('Gols', 'Shoots', 'Target Shoots').
+                gols (float): The threshold for goal classification (default is 1.5).
         """
         self.league_name = league_name
         self.matchs_rating = matchs_rating
@@ -40,23 +42,27 @@ class MatchRating:
         
         self.columns = columns_map[self.statistic]
 
-    def _get_gols(self, data_behind_n_matchs: pd.DataFrame, team: str) -> Tuple[int, int]:
+    def _get_gols(self, data: pd.DataFrame, team: str) -> Tuple[int, int]:
         """
             Calculates goals scored and conceded for a given team in the past matches.
             
-            :param team: The team name for which to calculate goals.
-            :return: Tuple of (goals scored, goals conceded).
+            Args:
+                data (pd.DataFrame): Data to search the goals of the team.
+                team (str): The team name for which to calculate goals.
+
+            Return: 
+                Tuple of (goals scored, goals conceded).
         """
         score = 0
         conceded = 0            
         
         # Goals for home matches
-        data_home = data_behind_n_matchs[(data_behind_n_matchs['HomeTeam'] == team)]        
+        data_home = data[(data['HomeTeam'] == team)]        
         score += int(data_home[self.columns[0]].sum())
         conceded += int(data_home[self.columns[1]].sum())
         
         # Goals for away matches
-        data_away = data_behind_n_matchs[(data_behind_n_matchs['AwayTeam'] == team)]
+        data_away = data[(data['AwayTeam'] == team)]
         score += int(data_away[self.columns[1]].sum())
         conceded += int(data_away[self.columns[0]].sum())
         
@@ -178,13 +184,16 @@ class MatchRating:
     def get_match_rating(self, 
                          file_name: str,
                          data: pd.DataFrame, 
-                         n_matchs_behind:int = 5, 
+                         n_matchs_behind: int = 5, 
                          classification: bool = False) -> None:
         """
             Calculates the match ratings based on the number of matches behind and updates the match ratings dictionary.
             
-            :param data: DataFrame containing the match data.
-            :param n_matchs_behind: Number of matches to look back for calculating ratings (default is 5).
+            Args:
+                file_name (str): Name of files.
+                data (pd.DataFrame): DataFrame containing the match data.
+                n_matchs_behind (int): Number of matches to look back for calculating ratings (default is 5).
+                classification (bool): Using the classification table to put weight (deafult False).
         """
         # Iterate through matches, starting after the number of matches behind
         for i in range(n_matchs_behind*10+1, data.shape[0]):
@@ -197,8 +206,8 @@ class MatchRating:
 
             if not classification:
                 # Calculate goals for home and away teams
-                score_home, conceded_home = self._get_gols(data_behind_n_matchs=data_behind_n_matchs, team=home_team)
-                score_away, conceded_away = self._get_gols(data_behind_n_matchs=data_behind_n_matchs, team=away_team)
+                score_home, conceded_home = self._get_gols(data=data_behind_n_matchs, team=home_team)
+                score_away, conceded_away = self._get_gols(data=data_behind_n_matchs, team=away_team)
             else:
                 # Calculate goals for home and away teams using weights of classification
                 score_home, conceded_home = self._get_gols_with_classification(data=data,

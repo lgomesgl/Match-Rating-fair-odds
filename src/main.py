@@ -17,7 +17,7 @@ def main(league_name, match_rating_path):
     all_results = load_json_file(match_rating_path)
 
     logging.info(f'Start into train data')
-    file_train = fr'{ parent_path }/database/{ league_name }/train'
+    file_train = fr'{ parent_path }/database/leagues/{ league_name }/train'
     datas_train = os.listdir(file_train)
 
     matchs_rating = {
@@ -33,7 +33,7 @@ def main(league_name, match_rating_path):
         for stats in ['Gols', 'Shoots', 'Target Shoots']:
             match_rat = MatchRating(league_name=league_name, matchs_rating=matchs_rating, statistic=stats, gols=1.5)
             match_rat.get_columns()
-            match_rat.get_match_rating(data=df, file_name=data, classification=True) 
+            match_rat.get_match_rating(data=df, file_name=data, classification=False) 
         count += 1
         logging.info(f'Datasets training: { count }/8')
     
@@ -67,7 +67,7 @@ def main(league_name, match_rating_path):
     })
     
     logging.info(f'Start into test data')
-    file_test = f'{parent_path}/database/{ league_name }/test'
+    file_test = f'{parent_path}/database/leagues/{ league_name }/test'
     datas_test = os.listdir(file_test)
     
     logging.info(f'Optimizer the models')

@@ -7,9 +7,9 @@ class OneModel:
     """
         A model to predict match outcomes based on historical data and ratings.
 
-        Parameters:
-        data (DataFrame): Historical match data.
-        models_ratings (dict): Ratings models for different match statistics.
+        Args:
+            data (DataFrame): Historical match data.
+            models_ratings (dict): Ratings models for different match statistics.
     """
 
     def __init__(self, data: pd.DataFrame, models_ratings: Dict[str, any]) -> None:
@@ -37,13 +37,13 @@ class OneModel:
         """
         Calculate the weighted probability of a match outcome.
 
-        Parameters:
-        w1 (float): Weight for probabilities based on goals.
-        prob_gols (List[float]): Probabilities based on goals.
-        prob_ts (List[float]): Probabilities based on target shots.
+        Args:
+            w1 (float): Weight for probabilities based on goals.
+            prob_gols (List[float]): Probabilities based on goals.
+            prob_ts (List[float]): Probabilities based on target shots.
 
         Returns:
-        np.ndarray: Weighted probabilities.
+            np.ndarray: Weighted probabilities.
         """
         w2 = 1 - w1
         return w1 * np.array(prob_gols) + w2 * np.array(prob_ts)
@@ -52,11 +52,11 @@ class OneModel:
         """
         Convert final result to probability format.
 
-        Parameters:
-        ftr (str): Final result ('H' for home win, 'D' for draw, 'A' for away win).
+        Args:
+            ftr (str): Final result ('H' for home win, 'D' for draw, 'A' for away win).
 
         Returns:
-        List[float]: One-hot encoded probabilities.
+            List[float]: One-hot encoded probabilities.
         """
         return [1, 0, 0] if ftr == 'H' else [0, 1, 0] if ftr == 'D' else [0, 0, 1]
 
@@ -67,13 +67,13 @@ class OneModel:
         """
         Calculate log loss error.
 
-        Parameters:
-        prob_real (List[float]): True probabilities.
-        prob_match (np.ndarray): Predicted probabilities.
-        epsilon (float): Small constant to prevent division by zero.
+        Args:
+            prob_real (List[float]): True probabilities.
+            prob_match (np.ndarray): Predicted probabilities.
+            epsilon (float): Small constant to prevent division by zero.
 
         Returns:
-        float: Log loss error.
+            float: Log loss error.
         """
         prob_match = np.clip(prob_match, epsilon, 1 - epsilon)
         return -np.sum(prob_real * np.log(prob_match))
@@ -86,14 +86,14 @@ class OneModel:
         """
         Calculate the derivative of log loss error.
 
-        Parameters:
-        prob_real (List[float]): True probabilities.
-        prob_match (np.ndarray): Predicted probabilities.
-        prob_gols (List[float]): Probabilities based on goals.
-        prob_ts (List[float]): Probabilities based on target shots.
+        Args:
+            prob_real (List[float]): True probabilities.
+            prob_match (np.ndarray): Predicted probabilities.
+            prob_gols (List[float]): Probabilities based on goals.
+            prob_ts (List[float]): Probabilities based on target shots.
 
         Returns:
-        float: Gradient of the log loss error.
+            float: Gradient of the log loss error.
         """
         return np.sum((np.array(prob_match) - np.array(prob_real)) * (np.array(prob_gols) - np.array(prob_ts)))
 
@@ -106,15 +106,15 @@ class OneModel:
         """
         Calculate the weight w1 using probabilities and the optimizer.
 
-        Parameters:
-        w1 (float): Initial weight.
-        prob_gols (List[float]): Probabilities based on goals.
-        prob_ts (List[float]): Probabilities based on target shots.
-        ftr (str): Final result ('H', 'D', 'A').
-        optimizer (Optimizer): Optimizer to update the weight.
+        Args:
+            w1 (float): Initial weight.
+            prob_gols (List[float]): Probabilities based on goals.
+            prob_ts (List[float]): Probabilities based on target shots.
+            ftr (str): Final result ('H', 'D', 'A').
+            optimizer (Optimizer): Optimizer to update the weight.
 
         Returns:
-        float: Updated weight w1.
+            float: Updated weight w1.
         """
         prob_match = self.__probability_match(w1=w1, prob_gols=prob_gols, prob_ts=prob_ts)
         prob_real = self.__prob_match_real(ftr=ftr)
@@ -134,11 +134,11 @@ class OneModel:
         """
         Get goals scored and conceded by the team.
 
-        Parameters:
-        team (str): Team name.
+        Args:
+            team (str): Team name.
 
         Returns:
-        Tuple[int, int]: Goals scored (feitos) and conceded (concedidos).
+            Tuple[int, int]: Goals scored (feitos) and conceded (concedidos).
         """
         feitos: int = 0
         concedidos: int = 0
@@ -160,13 +160,13 @@ class OneModel:
         """
         Get the match rating based on past performance and update w1.
 
-        Parameters:
-        w1 (float): Initial weight for goal probabilities.
-        optimizer (Optimizer): Optimizer to update the weight.
-        n_matchs_behind (int): Number of past matches to consider for analysis.
+        Args:
+            w1 (float): Initial weight for goal probabilities.
+            optimizer (Optimizer): Optimizer to update the weight.
+            n_matchs_behind (int): Number of past matches to consider for analysis.
 
         Returns:
-        float: Updated weight w1.
+            float: Updated weight w1.
         """
         data = self.data
         for i in range(n_matchs_behind * 10 + 1, data.shape[0]):
