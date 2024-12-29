@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import os
 from typing import List, Dict
+from concurrent.futures import ProcessPoolExecutor
 from src.utils.tools import load_json_file
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -10,18 +11,26 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 class MonteCarlo:
     def __init__(self, games: List[Dict[str, str | List]]):
         self.games = games
-        
-    def simulate(self, interations: int, number_of_samples: int) -> np.ndarray:
-        """
-            Simulate games for a ticket rondomly
-        """
-        tickets = []
-        rng = np.random.default_rng()
-        for _ in range(interations):
-            ticket = rng.choice(self.games, size=number_of_samples, replace=False)
-            tickets.append(ticket)
 
-        return tickets
+    @staticmethod
+    def _simulate_batch(games: List[Dict[str, str | List]], number_of_samples: int) -> List[Dict]:
+        """
+        Simulate a single batch of games for a ticket randomly.
+        """
+        rng = np.random.default_rng()
+        return rng.choice(games, size=number_of_samples, replace=False).tolist()
+
+    def simulate(self, iterations: int, number_of_samples: int) -> List[List[Dict]]:
+        """
+        Simulate games for tickets randomly using parallelization.
+        """
+        with ProcessPoolExecutor() as executor:
+            results = list(executor.map(
+                MonteCarlo._simulate_batch, 
+                [self.games] * iterations, 
+                [number_of_samples] * iterations
+            ))
+        return results
 
 class Simulation:
     def __init__(self, matches):
@@ -76,10 +85,12 @@ class Simulation:
     def run():
         pass
 
-json_path = r"C:\home\projects\matchRating\database\json\simulation_probabilities.json"
-games = load_json_file(file_path=json_path)
-sl = Simulation(matches=games)
-g = sl.extract_games_by_league()
-mc = MonteCarlo(games=g)
-ga = mc.simulate(100, 5)
-ga_ = sl._get_probabilities(tickets=ga)
+
+if __name__ == '__main__':
+    json_path = r"C:\home\projects\matchRating\database\json\simulation_probabilities.json"
+    games = load_json_file(file_path=json_path)
+    sl = Simulation(matches=games)
+    g = sl.extract_games_by_league()
+    mc = MonteCarlo(games=g)
+    ga = mc.simulate(100, 5)
+    ga_ = sl._get_probabilities(tickets=ga)
