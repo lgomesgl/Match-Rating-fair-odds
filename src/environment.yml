@@ -1,0 +1,15 @@
+name: match-rating
+channels:
+  - conda-forge
+dependencies:
+  - python=3.9
+  - numpy
+  - numba
+  - tqdm
+  - matplotlib
+  - pandas
+  - logging
+  - pip
+  - pip:
+      - tqdm
+      - typing-extensions
