@@ -1,55 +1,49 @@
 import logging
 import numpy as np
-import pandas as pd
-import os
 from typing import List, Dict
 from concurrent.futures import ProcessPoolExecutor
 from collections import Counter
-#from numba import njit
+from tqdm import tqdm  
+from numba import njit
 from src.utils.tools import load_json_file
 import time
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-
 class MonteCarlo:
     def __init__(self, games: List[Dict[str, str | List]]):
-        self.games = games
+        self.games = np.array(games)
 
     @staticmethod
     #@njit
-    def _simulate_batch(games: np.ndarray, number_of_samples: int) -> np.ndarray:
+    def _simulate_batch(games: np.ndarray, number_of_games: int) -> np.ndarray:
         """
         Simulate a single batch of games for a ticket randomly using Numba.
         """
         rng = np.random.default_rng()
-        return rng.choice(games, size=number_of_samples, replace=False)
+        return rng.choice(games, size=number_of_games, replace=False)
 
-    def simulate(self, iterations: int, number_of_samples: int) -> List[np.ndarray]:
+    def simulate(self, iterations: int, number_of_games: int) -> List[np.ndarray]:
         """
         Simulate games for tickets randomly using parallelization.
         """
-        logging.info(f"Starting simulation with {iterations} iterations and {number_of_samples} samples per ticket.")
+        logging.info(f"Starting simulation with {iterations} iterations and {number_of_games} samples per ticket.")
         start_time = time.time()
 
         games_ = np.array(self.games)
         with ProcessPoolExecutor() as executor:
-            results = []
-            for i, result in enumerate(executor.map(
-                MonteCarlo._simulate_batch,
-                [games_] * iterations,
-                [number_of_samples] * iterations
-            )):
-                results.append(result)
-                # Registra o progresso a cada 10% de iterações
-                if (i + 1) % (iterations // 10) == 0:
-                    progress = (i + 1) / iterations * 100
-                    logging.info(f"{progress:.0f}% of tickets simulated")
+            results = list(tqdm(
+                executor.map(
+                    MonteCarlo._simulate_batch,
+                    [games_] * iterations,
+                    [number_of_games] * iterations
+                ),
+                total=iterations, desc="Simulating games"
+            ))
 
         end_time = time.time()
         logging.info(f"Simulation completed in {end_time - start_time:.2f} seconds.")
         return results
-
 
 class Simulation:
     def __init__(self, matches):
@@ -77,47 +71,74 @@ class Simulation:
         return games
 
     @staticmethod
-    def _restrictions(ticket: List[Dict[str, str]], restriction_league: bool) -> bool:
+    def _apply_restrictions(ticket: List[Dict[str, str]], 
+                      restriction_league: bool, 
+                      restriction_match: bool) -> bool:
+        """
+            Create restrictions to apply in a ticket.
+            Thoses restrictions are personal.  
+        """
         league_count = Counter(game['league'] for game in ticket)
         result_count = Counter(game['result'] for game in ticket)
         ticket_size = len(ticket)
 
         if restriction_league and max(league_count.values(), default=0) > 2:
             return False
-        if max(result_count.values(), default=0) == ticket_size:
+        if restriction_match and max(result_count.values(), default=0) == ticket_size:
             return False
         if result_count['Draw'] > 0.40 * ticket_size:
             return False
         if result_count['Away'] > 0.40 * ticket_size:
             return False
-
+    
         return True
+    
+    @staticmethod
+    def _remove_duplicate_tickets(tickets: List[List[Dict]]) -> List[List[Dict]]:
+        """
+        Remove duplicates tickets
+        """
+        logging.info(f"Removing duplicates from {len(tickets)} tickets.")
+        start_time = time.time()
 
-    def _get_probabilities(self, tickets: List[List[Dict]], restriction_league: bool = True) -> List[List[Dict]]:
+        unique_tickets = set()
+        deduplicated_tickets = []
+
+        for ticket in tickets:
+            ticket_representation = tuple(
+                (game['league'], game['match'], game['result'])
+                for game in sorted(ticket, key=lambda x: (x['league'], x['match']))
+            )
+            if ticket_representation not in unique_tickets:
+                unique_tickets.add(ticket_representation)
+                deduplicated_tickets.append(ticket)
+
+        end_time = time.time()
+        logging.info(f"Removed duplicates in {end_time - start_time:.2f} seconds. {len(deduplicated_tickets)} unique tickets remain.")
+        return deduplicated_tickets
+
+    def _validate_tickets(self, tickets: List[List[Dict]], 
+                           restriction_league: bool = True, 
+                           restriction_match: bool = True) -> List[List[Dict]]:
+        
         logging.info(f"Processing {len(tickets)} tickets for probabilities and restrictions.")
         start_time = time.time()
 
         rng = np.random.default_rng()
         results = ['Home', 'Draw', 'Away']
-        tickets_probabilities = []
+        processed_tickets = []
 
         for ticket in tickets:
-            ticket_probabilities = []
-            for game in ticket:
-                prob_choice = rng.choice(results, p=game['probabilities'])
-                ticket_probabilities.append({
-                    "league": game["league"],
-                    "match": game["match"],
-                    "probabilities": game["probabilities"],
-                    "result": prob_choice
-                })
+            ticket_probabilities = [
+                {**game, "result": rng.choice(results, p=game['probabilities'])} for game in ticket
+            ]
 
-            if self._restrictions(ticket=ticket_probabilities, restriction_league=restriction_league):
-                tickets_probabilities.append(ticket_probabilities)
+            if self._apply_restrictions(ticket=ticket_probabilities, restriction_league=restriction_league, restriction_match=restriction_match):
+                processed_tickets.append(ticket_probabilities)
 
-        end_time = time.time()
-        logging.info(f"Processed tickets in {end_time - start_time:.2f} seconds.")
-        return tickets_probabilities
+        unique_tickets = self._remove_duplicate_tickets(processed_tickets)
+        logging.info(f"Processed tickets in {time.time() - start_time:.2f} seconds.")
+        return unique_tickets
 
     def _get_best_tickets(self, tickets: List[List[Dict]], top_n: int = 5) -> List[List[Dict]]:
         logging.info(f"Calculating the best tickets from {len(tickets)} tickets.")
@@ -145,16 +166,28 @@ class Simulation:
             for game in ticket:
                 print(f"  {game}")
 
+    def run(self, 
+            leagues_name, 
+            iterations, 
+            number_of_games, 
+            restriction_league=False, 
+            restriction_match=False):
+        
+        extracted_games = self.extract_games_by_league(leagues_name=leagues_name)
+        monte_carlo = MonteCarlo(games=extracted_games)
+        simulated_tickets = monte_carlo.simulate(iterations=iterations, number_of_games=number_of_games)
+        processed_tickets = self._validate_tickets(tickets=simulated_tickets, restriction_league=restriction_league, restriction_match=restriction_match)
+        self._get_best_tickets(tickets=processed_tickets)
+        self.show_tickets()
+        
 
 if __name__ == '__main__':
     json_path = r"C:\home\projects\matchRating\database\json\simulation_probabilities.json"
     games = load_json_file(file_path=json_path)
 
-    sl = Simulation(matches=games)
-    extracted_games = sl.extract_games_by_league(leagues_name=['Premier League', 'Serie A'])
-    mc = MonteCarlo(games=extracted_games)
-    simulated_tickets = mc.simulate(iterations=100000, number_of_samples=5)
-    processed_tickets = sl._get_probabilities(tickets=simulated_tickets, restriction_league=False)
-    best_tickets = sl._get_best_tickets(tickets=processed_tickets)
-
-    sl.show_tickets()
+    simulation = Simulation(matches=games)
+    simulation.run(leagues_name=['Premier League', 'Serie A', 'Ligue 1'], 
+                   iterations=300000, 
+                   number_of_games=3, 
+                   restriction_league=True, 
+                   restriction_match=False)
