@@ -4,7 +4,6 @@ from typing import List, Dict
 from concurrent.futures import ProcessPoolExecutor
 from collections import Counter
 from tqdm import tqdm  
-from numba import njit
 from src.utils.tools import load_json_file
 import time
 
@@ -15,28 +14,36 @@ class MonteCarlo:
         self.games = np.array(games)
 
     @staticmethod
-    #@njit
-    def _simulate_batch(games: np.ndarray, number_of_games: int) -> np.ndarray:
+    def _simulate_batch(games: np.ndarray, number_of_games: int, rng_seed: int) -> np.ndarray:
         """
         Simulate a single batch of games for a ticket randomly using Numba.
+        Each process gets its own RNG derived from a unique seed.
         """
-        rng = np.random.default_rng()
+        rng = np.random.default_rng(rng_seed) 
         return rng.choice(games, size=number_of_games, replace=False)
 
     def simulate(self, iterations: int, number_of_games: int) -> List[np.ndarray]:
         """
         Simulate games for tickets randomly using parallelization.
+        Ensures independent random number generation across parallel processes.
         """
         logging.info(f"Starting simulation with {iterations} iterations and {number_of_games} samples per ticket.")
         start_time = time.time()
 
         games_ = np.array(self.games)
+
+        unique_seed = np.random.SeedSequence().entropy  
+        seed_sequence = np.random.SeedSequence(int(unique_seed))
+        rng_seeds = seed_sequence.spawn(iterations)  # Create independent seeds
+
+        # Run parallel simulations
         with ProcessPoolExecutor() as executor:
             results = list(tqdm(
                 executor.map(
                     MonteCarlo._simulate_batch,
-                    [games_] * iterations,
-                    [number_of_games] * iterations
+                    [games_] * iterations,        
+                    [number_of_games] * iterations, 
+                    rng_seeds                       
                 ),
                 total=iterations, desc="Simulating games"
             ))
@@ -186,8 +193,8 @@ if __name__ == '__main__':
     games = load_json_file(file_path=json_path)
 
     simulation = Simulation(matches=games)
-    simulation.run(leagues_name=['Premier League', 'Serie A', 'Ligue 1'], 
-                   iterations=300000, 
-                   number_of_games=3, 
+    simulation.run(leagues_name=None, 
+                   iterations=100000, 
+                   number_of_games=5, 
                    restriction_league=True, 
                    restriction_match=False)
