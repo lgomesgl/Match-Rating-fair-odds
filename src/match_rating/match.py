@@ -163,6 +163,7 @@ class MatchRating:
         data_home = data_behind_n_matchs[data_behind_n_matchs['HomeTeam'] == team]
         data_away = data_behind_n_matchs[data_behind_n_matchs['AwayTeam'] == team]
 
+        print(data_home, data_away)
         table = LeagueTable(data_league=data).fit()
         #table = self.__get_table_classification(file_name=file_name)
         
